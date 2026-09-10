@@ -1,0 +1,65 @@
+<div id="page-production">
+    <div class="table-wrap">
+        <div class="table-header">
+    <div class="filter-group">
+        <!-- ★★★ 合并为一个搜索框（支持订单号/产品名称/阶段等） ★★★ -->
+        <input type="text" class="form-control form-control-sm" placeholder="🔍 搜索订单号/产品名称/阶段..." id="prodFilterKeyword" oninput="renderProduction()" style="min-width:280px;" />
+        <button class="btn btn-sm btn-outline-custom" onclick="resetProdFilters()"><i class="bi bi-arrow-counterclockwise"></i> 重置</button>
+    </div>
+    <!-- 右侧操作按钮保持不变 -->
+    <div class="d-flex align-items-center gap-2 flex-wrap">
+        <!-- 底色按钮（仅图标） -->
+        <div class="btn-group">
+            <button class="btn btn-sm dropdown-toggle" data-bs-toggle="dropdown" style="background:#ffc107;border-color:#ffc107;color:#0a2540;border-radius:8px 0 0 8px;padding:4px 10px;font-weight:500;border:none;font-size:13px;" title="添加底色">
+                <i class="bi bi-paint-bucket"></i>
+            </button>
+            <ul class="dropdown-menu" style="padding:8px;min-width:auto;border-radius:12px;box-shadow:0 4px 16px rgba(0,0,0,0.12);">
+                <li style="display:flex;gap:6px;padding:4px;flex-wrap:wrap;">
+                    <span style="display:inline-block;width:28px;height:28px;border-radius:50%;background:#fff3cd;cursor:pointer;border:2px solid #ddd;transition:all 0.15s;" onclick="applyProdHighlight('#fff3cd')" title="黄色"></span>
+                    <span style="display:inline-block;width:28px;height:28px;border-radius:50%;background:#d4edda;cursor:pointer;border:2px solid #ddd;transition:all 0.15s;" onclick="applyProdHighlight('#d4edda')" title="绿色"></span>
+                    <span style="display:inline-block;width:28px;height:28px;border-radius:50%;background:#f8d7da;cursor:pointer;border:2px solid #ddd;transition:all 0.15s;" onclick="applyProdHighlight('#f8d7da')" title="红色"></span>
+                    <span style="display:inline-block;width:28px;height:28px;border-radius:50%;background:#cce5ff;cursor:pointer;border:2px solid #ddd;transition:all 0.15s;" onclick="applyProdHighlight('#cce5ff')" title="蓝色"></span>
+                    <span style="display:inline-block;width:28px;height:28px;border-radius:50%;background:#e2d9f3;cursor:pointer;border:2px solid #ddd;transition:all 0.15s;" onclick="applyProdHighlight('#e2d9f3')" title="紫色"></span>
+                    <span style="display:inline-block;width:28px;height:28px;border-radius:50%;background:#fce4d6;cursor:pointer;border:2px solid #ddd;transition:all 0.15s;" onclick="applyProdHighlight('#fce4d6')" title="橙色"></span>
+                    <span style="display:inline-block;width:28px;height:28px;border-radius:50%;background:#d5e8d0;cursor:pointer;border:2px solid #ddd;transition:all 0.15s;" onclick="applyProdHighlight('#d5e8d0')" title="薄荷"></span>
+                    <span style="font-size:12px;color:#6c7a8a;background:#f0f2f5;padding:2px 12px;border-radius:12px;" id="selectedProdCount">已选 0 个</span>
+                </li>
+                <li><hr class="dropdown-divider" style="margin:4px 0;"></li>
+                <li><a class="dropdown-item" href="#" onclick="clearProdHighlight()" style="font-size:13px;border-radius:6px;"><i class="bi bi-eraser"></i> 清除底色</a></li>
+            </ul>
+        </div>
+
+        <!-- 全选 -->
+        <button class="btn btn-sm btn-outline-custom" onclick="toggleAllProdRows()" style="border-radius:8px;padding:4px 14px;font-size:13px;">
+            <i class="bi bi-check-all"></i> 全选
+        </button>
+
+        <!-- 导出选中 -->
+        <button class="btn btn-sm" onclick="exportSelectedProduction()" style="background:#0d6efd;border-color:#0d6efd;color:#fff;border-radius:8px;padding:4px 14px;font-weight:500;border:none;font-size:13px;">
+            <i class="bi bi-file-earmark-excel"></i> 导出选中
+        </button>
+
+        <!-- 列设置（仅图标，包含清空生产单） -->
+        <button class="btn btn-sm btn-outline-custom btn-add-column" onclick="openProdColumnSettings()" title="列设置" style="padding:4px 10px;">
+            <i class="bi bi-layout-three-columns"></i>
+        </button>
+
+        <!-- 月份选择器 - 缩小 -->
+        <div class="month-export-group">
+            <input type="month" class="form-control form-control-sm month-picker" id="prodExportMonthPicker" placeholder="选择月份" style="width:130px;min-width:130px;" />
+        </div>
+
+        <!-- 导出生产单 -->
+        <button class="btn btn-sm btn-outline-custom btn-excel-export" onclick="exportProductionToExcel()" style="padding:4px 14px;">
+            <i class="bi bi-file-earmark-excel"></i> 导出生产单
+        </button>
+    </div>
+</div>
+        <div class="table-responsive" id="prodTableWrapper">
+            <table class="table" id="prodTable">
+                <thead id="prodThead"></thead>
+                <tbody id="prodBody"></tbody>
+            </table>
+        </div>
+    </div>
+</div>

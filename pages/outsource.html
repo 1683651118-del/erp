@@ -1,0 +1,106 @@
+<div id="page-outsource">
+    <div class="table-wrap">
+        <div class="table-header">
+            <div class="filter-group">
+                <!-- ★★★ 合并为一个搜索框 ★★★ -->
+                <input type="text" class="form-control form-control-sm" placeholder="🔍 搜索订单号/产品名称/供应商..." id="outFilterKeyword" oninput="renderOutsource()" style="min-width:250px;" />
+                <button class="btn btn-sm btn-outline-custom" onclick="resetOutFilters()"><i class="bi bi-arrow-counterclockwise"></i> 重置</button>
+            </div>
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+                <!-- ★★★ 列设置 - 仅图标 ★★★ -->
+                <button class="btn btn-sm btn-outline-custom btn-add-column" onclick="openOutColumnSettings()" title="列设置" style="padding:4px 10px;">
+                    <i class="bi bi-layout-three-columns"></i>
+                </button>
+                <!-- ★★★ 月份选择器 - 缩小 ★★★ -->
+                <div class="month-export-group">
+                    <input type="month" class="form-control form-control-sm month-picker" id="outExportMonthPicker" placeholder="选择月份" style="width:130px;min-width:130px;" />
+                </div>
+                <button class="btn btn-sm btn-outline-custom btn-excel-export" onclick="exportOutOrdersToExcel()" style="padding:4px 14px;">
+                    <i class="bi bi-file-earmark-excel"></i> 导出外发
+                </button>
+                <button class="btn btn-sm btn-primary-custom" onclick="openOutsourceModal()" style="padding:4px 14px;">
+                    <i class="bi bi-plus-lg"></i> 新建外发
+                </button>
+            </div>
+        </div>
+        <div class="outsource-stats" id="outsourceStats">
+            <span class="stat-item"><span class="dot pending"></span> 待外发 <span class="count" id="outStatPending">0</span></span>
+            <span class="stat-item"><span class="dot progress"></span> 外发中 <span class="count" id="outStatProgress">0</span></span>
+            <span class="stat-item"><span class="dot done"></span> 已完成-待出货 <span class="count" id="outStatDone">0</span></span>
+            <span class="stat-item"><span class="dot location"></span> 5楼 <span class="count" id="outStatLocation5">0</span></span>
+            <span class="stat-item"><span class="dot location" style="background:#c77d1e;"></span> 其他 <span class="count" id="outStatOther">0</span></span>
+        </div>
+        <div class="table-responsive" id="outTableWrapper">
+            <table class="table" id="outTable">
+                <thead id="outThead"></thead>
+                <tbody id="outBody"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- 外发新建模态框 -->
+<div class="modal fade" id="outsourceModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header"><h5 class="modal-title"><i class="bi bi-send-plus"></i> 新建外发单</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <div class="modal-body">
+                <form id="outsourceForm">
+                    <div class="row g-3">
+                        <div class="col-md-6"><label class="form-label">关联订单号 *</label><select class="form-select" id="outOrderSelect"><option value="">-- 请选择订单 --</option></select></div>
+                        <div class="col-md-6"><label class="form-label">外发单号</label><input type="text" class="form-control" id="outOutsourceNo" placeholder="自动生成" readonly style="background:#f0f2f5;" /></div>
+                        <div class="col-md-4"><label class="form-label">外发状态 *</label><select class="form-select" id="outStatus"><option value="待外发">待外发</option><option value="外发中">外发中</option><option value="已完成-待出货">已完成-待出货</option></select></div>
+                        <div class="col-md-4"><label class="form-label">外发</label><input type="text" class="form-control" id="outLocation" placeholder="如 5楼" value="5楼" /></div>
+                        <div class="col-md-4"><label class="form-label">外发日期</label><input type="date" class="form-control" id="outDate" /></div>
+                        <div class="col-md-6"><label class="form-label">外发供应商</label><input type="text" class="form-control" id="outSupplier" placeholder="供应商名称" /></div>
+                        <div class="col-md-6"><label class="form-label">预计返回日期</label><input type="date" class="form-control" id="outReturnDate" /></div>
+                        <div class="col-md-12"><label class="form-label">备注</label><textarea class="form-control" id="outRemark" rows="2" placeholder="外发备注"></textarea></div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer"><button class="btn btn-secondary" data-bs-dismiss="modal">取消</button><button class="btn btn-primary-custom" onclick="saveOutsource()">确认创建</button></div>
+        </div>
+    </div>
+</div>
+
+<!-- 外发详情模态框 -->
+<div class="modal fade" id="outsourceDetailModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header"><h5 class="modal-title"><i class="bi bi-pencil-square"></i> 外发详情</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <div class="modal-body">
+                <form id="outsourceDetailForm">
+                    <input type="hidden" id="outDetailId" />
+                    <div class="row g-3">
+                        <div class="col-md-6"><label class="form-label">外发单号</label><input type="text" class="form-control" id="outDetailNo" readonly style="background:#f0f2f5;" /></div>
+                        <div class="col-md-6"><label class="form-label">关联订单</label><input type="text" class="form-control" id="outDetailOrderNo" readonly style="background:#f0f2f5;" /></div>
+                        <div class="col-md-6"><label class="form-label">产品名称</label><input type="text" class="form-control" id="outDetailProduct" readonly style="background:#f0f2f5;" /></div>
+                        <div class="col-md-3"><label class="form-label">数量</label><input type="text" class="form-control" id="outDetailQty" readonly style="background:#f0f2f5;" /></div>
+                        <div class="col-md-3"><label class="form-label">客户号</label><input type="text" class="form-control" id="outDetailCustomer" readonly style="background:#f0f2f5;" /></div>
+                        <div class="col-md-4"><label class="form-label">外发状态</label><select class="form-select" id="outDetailStatus"><option value="待外发">待外发</option><option value="外发中">外发中</option><option value="已完成-待出货">已完成-待出货</option></select></div>
+                        <div class="col-md-4"><label class="form-label">外发</label><input type="text" class="form-control" id="outDetailLocation" /></div>
+                        <div class="col-md-4"><label class="form-label">外发日期</label><input type="date" class="form-control" id="outDetailDate" /></div>
+                        <div class="col-md-6"><label class="form-label">外发供应商</label><input type="text" class="form-control" id="outDetailSupplier" /></div>
+                        <div class="col-md-6"><label class="form-label">预计返回日期</label><input type="date" class="form-control" id="outDetailReturnDate" /></div>
+                        <div class="col-md-12"><label class="form-label">备注</label><textarea class="form-control" id="outDetailRemark" rows="2"></textarea></div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+                <button class="btn btn-primary-custom" onclick="saveOutsourceDetail()">保存修改</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 外发列设置模态框 -->
+<div class="modal fade" id="outColumnSettingsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header"><h5 class="modal-title">外发管理 - 列设置</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <div class="modal-body column-settings-body" id="outColumnSettingsContent"></div>
+            <div class="modal-footer"><button class="btn btn-secondary" data-bs-dismiss="modal">关闭</button><button class="btn btn-primary-custom" onclick="resetOutColumns()">恢复默认</button></div>
+        </div>
+    </div>
+</div>

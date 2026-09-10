@@ -1,0 +1,417 @@
+<div id="page-inventory">
+    <div class="table-wrap">
+        <!-- 顶部操作栏 -->
+        <div class="table-header" style="padding:10px 20px;border-bottom:1px solid #f0f2f5;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;background:#fff;">
+            <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+                <span style="font-weight:600;font-size:16px;">📦 库存管理</span>
+                <span style="font-size:13px;color:#6c7a8a;" id="inventoryTotalCount">共 0 个产品</span>
+                <span style="font-size:12px;color:#6c7a8a;background:#f0f2f5;padding:2px 12px;border-radius:12px;" id="selectedInventoryCount">已选 0 行</span>
+                <!-- 搜索 -->
+                <div style="display:flex;align-items:center;gap:6px;margin-left:4px;">
+                    <i class="bi bi-search" style="color:#999;font-size:14px;"></i>
+                    <input type="text" id="inventorySearchInput" class="form-control form-control-sm" placeholder="搜索产品名称/编码..." style="width:180px;font-size:13px;border-radius:20px;padding:4px 14px;border:1px solid #d0d8e0;background:#f8fafc;" oninput="renderInventory()" />
+                    <button class="btn btn-sm btn-outline-custom" onclick="document.getElementById('inventorySearchInput').value='';renderInventory();" style="padding:2px 8px;font-size:12px;border-radius:20px;" title="清空搜索">
+                        <i class="bi bi-x-circle"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="d-flex gap-2 flex-wrap align-items-center">
+                <!-- 多色底色 -->
+                <div class="btn-group">
+                    <button class="btn btn-sm dropdown-toggle" data-bs-toggle="dropdown" style="background:#ffc107;border-color:#ffc107;color:#0a2540;border-radius:8px 0 0 8px;padding:4px 14px;font-weight:500;border:none;font-size:13px;">
+                        <i class="bi bi-paint-bucket"></i> 底色
+                    </button>
+                    <ul class="dropdown-menu" style="padding:8px;min-width:auto;border-radius:12px;box-shadow:0 4px 16px rgba(0,0,0,0.12);">
+                        <li style="display:flex;gap:6px;padding:4px;flex-wrap:wrap;">
+                            <span style="display:inline-block;width:28px;height:28px;border-radius:50%;background:#fff3cd;cursor:pointer;border:2px solid #ddd;transition:all 0.15s;" onclick="applyInventoryHighlight('#fff3cd')" title="黄色" onmouseover="this.style.borderColor='#0a2540';this.style.transform='scale(1.1)'" onmouseout="this.style.borderColor='#ddd';this.style.transform='scale(1)'"></span>
+                            <span style="display:inline-block;width:28px;height:28px;border-radius:50%;background:#d4edda;cursor:pointer;border:2px solid #ddd;transition:all 0.15s;" onclick="applyInventoryHighlight('#d4edda')" title="绿色" onmouseover="this.style.borderColor='#0a2540';this.style.transform='scale(1.1)'" onmouseout="this.style.borderColor='#ddd';this.style.transform='scale(1)'"></span>
+                            <span style="display:inline-block;width:28px;height:28px;border-radius:50%;background:#f8d7da;cursor:pointer;border:2px solid #ddd;transition:all 0.15s;" onclick="applyInventoryHighlight('#f8d7da')" title="红色" onmouseover="this.style.borderColor='#0a2540';this.style.transform='scale(1.1)'" onmouseout="this.style.borderColor='#ddd';this.style.transform='scale(1)'"></span>
+                            <span style="display:inline-block;width:28px;height:28px;border-radius:50%;background:#cce5ff;cursor:pointer;border:2px solid #ddd;transition:all 0.15s;" onclick="applyInventoryHighlight('#cce5ff')" title="蓝色" onmouseover="this.style.borderColor='#0a2540';this.style.transform='scale(1.1)'" onmouseout="this.style.borderColor='#ddd';this.style.transform='scale(1)'"></span>
+                            <span style="display:inline-block;width:28px;height:28px;border-radius:50%;background:#e2d9f3;cursor:pointer;border:2px solid #ddd;transition:all 0.15s;" onclick="applyInventoryHighlight('#e2d9f3')" title="紫色" onmouseover="this.style.borderColor='#0a2540';this.style.transform='scale(1.1)'" onmouseout="this.style.borderColor='#ddd';this.style.transform='scale(1)'"></span>
+                            <span style="display:inline-block;width:28px;height:28px;border-radius:50%;background:#fce4d6;cursor:pointer;border:2px solid #ddd;transition:all 0.15s;" onclick="applyInventoryHighlight('#fce4d6')" title="橙色" onmouseover="this.style.borderColor='#0a2540';this.style.transform='scale(1.1)'" onmouseout="this.style.borderColor='#ddd';this.style.transform='scale(1)'"></span>
+                            <span style="display:inline-block;width:28px;height:28px;border-radius:50%;background:#d5e8d0;cursor:pointer;border:2px solid #ddd;transition:all 0.15s;" onclick="applyInventoryHighlight('#d5e8d0')" title="薄荷" onmouseover="this.style.borderColor='#0a2540';this.style.transform='scale(1.1)'" onmouseout="this.style.borderColor='#ddd';this.style.transform='scale(1)'"></span>
+                        </li>
+                        <li><hr class="dropdown-divider" style="margin:4px 0;"></li>
+                        <li><a class="dropdown-item" href="#" onclick="clearInventoryHighlight()" style="font-size:13px;border-radius:6px;"><i class="bi bi-eraser"></i> 清除底色</a></li>
+                    </ul>
+                </div>
+                <!-- 列设置 -->
+                <button class="btn btn-sm" onclick="openInventoryColumnSettings()" style="background:#6c757d;border-color:#6c757d;color:#fff;border-radius:8px;padding:4px 14px;font-weight:500;border:none;font-size:13px;">
+                    <i class="bi bi-layout-three-columns"></i> 列设置
+                </button>
+                <!-- 导出选中 -->
+                <button class="btn btn-sm" onclick="exportSelectedInventory()" style="background:#0d6efd;border-color:#0d6efd;color:#fff;border-radius:8px;padding:4px 14px;font-weight:500;border:none;font-size:13px;">
+                    <i class="bi bi-file-earmark-excel"></i> 导出选中
+                </button>
+                <!-- 全选 -->
+                <button class="btn btn-sm btn-outline-custom" onclick="toggleAllInventoryRows()" style="border-radius:8px;padding:4px 14px;font-size:13px;">
+                    <i class="bi bi-check-all"></i> 全选
+                </button>
+                <button class="btn btn-sm" onclick="openInboundModal()" style="background:#28a745;border-color:#28a745;color:#fff;border-radius:8px;padding:4px 16px;font-weight:500;border:none;font-size:13px;">
+                    <i class="bi bi-arrow-down-circle"></i> 入库
+                </button>
+                <button class="btn btn-sm" onclick="openOutboundModal()" style="background:#dc3545;border-color:#dc3545;color:#fff;border-radius:8px;padding:4px 16px;font-weight:500;border:none;font-size:13px;">
+                    <i class="bi bi-arrow-up-circle"></i> 出库
+                </button>
+                <button class="btn btn-sm btn-outline-custom" onclick="openInventoryLogModal()" style="border-radius:8px;padding:4px 16px;font-size:13px;">
+                    <i class="bi bi-clock-history"></i> 流水记录
+                </button>
+            </div>
+        </div>
+
+        <!-- 统计卡片 -->
+        <div style="padding:10px 20px;display:flex;flex-wrap:wrap;gap:12px;background:#f8fafc;border-bottom:1px solid #e9edf2;">
+            <div style="background:#fff;padding:6px 18px;border-radius:8px;border:1px solid #e9edf2;display:flex;align-items:center;gap:8px;">
+                <span style="font-size:12px;color:#6c7a8a;">📦 总SKU</span>
+                <span style="font-weight:700;font-size:20px;color:#0a2540;" id="statTotalSku">0</span>
+            </div>
+            <div style="background:#fff;padding:6px 18px;border-radius:8px;border:1px solid #e9edf2;display:flex;align-items:center;gap:8px;">
+                <span style="font-size:12px;color:#6c7a8a;">📊 成品库存</span>
+                <span style="font-weight:700;font-size:20px;color:#0066cc;" id="statTotalStock">0</span>
+            </div>
+            <div style="background:#fff;padding:6px 18px;border-radius:8px;border:1px solid #e9edf2;display:flex;align-items:center;gap:8px;">
+                <span style="font-size:12px;color:#6c7a8a;">🧱 板材库存</span>
+                <span style="font-weight:700;font-size:20px;color:#fd7e14;" id="statBoardStock">0</span>
+            </div>
+            <div style="background:#fff;padding:6px 18px;border-radius:8px;border:1px solid #e9edf2;display:flex;align-items:center;gap:8px;">
+                <span style="font-size:12px;color:#6c7a8a;">⚠️ 低库存预警</span>
+                <span style="font-weight:700;font-size:20px;color:#dc3545;" id="statLowStock">0</span>
+            </div>
+            <div style="background:#fff;padding:6px 18px;border-radius:8px;border:1px solid #e9edf2;display:flex;align-items:center;gap:8px;">
+                <span style="font-size:12px;color:#6c7a8a;">📋 流水记录</span>
+                <span style="font-weight:700;font-size:20px;color:#6c757d;" id="statLogCount">0</span>
+            </div>
+        </div>
+
+        <!-- 筛选 -->
+        <div style="padding:8px 20px;display:flex;flex-wrap:wrap;gap:8px;background:#f8fafc;border-bottom:1px solid #e9edf2;align-items:center;">
+            <span style="font-size:13px;font-weight:600;color:#3d4e62;margin-right:4px;">🔍 筛选：</span>
+            <select class="form-select form-select-sm" id="inventoryFilterStatus" style="width:auto;font-size:13px;border-radius:20px;" onchange="renderInventory()">
+                <option value="">全部状态</option>
+                <option value="low">低库存预警</option>
+                <option value="normal">正常</option>
+            </select>
+        </div>
+
+        <!-- 表格区域 -->
+        <div style="padding:8px 12px;">
+            <div style="max-height: calc(100vh - 400px); overflow-y: auto; overflow-x: auto; position: relative; border-radius: 8px; border: 1px solid #e9edf2;">
+                <div id="inventoryList"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 列设置模态框 -->
+    <div class="modal fade" id="inventoryColumnSettingsModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="bi bi-layout-three-columns"></i> 库存管理 - 列设置</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body column-settings-body" id="inventoryColumnSettingsContent"></div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+                    <button class="btn btn-primary-custom" onclick="resetInventoryColumns()">恢复默认</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 入库模态框（增加存放位置） -->
+    <div class="modal fade" id="inboundModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header" style="background:#e8f5e9;border-bottom:2px solid #28a745;">
+                    <h5 class="modal-title"><i class="bi bi-arrow-down-circle" style="color:#28a745;"></i> 入库操作</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="inboundForm">
+                        <div class="mb-3">
+                            <label class="form-label">物料类型 *</label>
+                            <select class="form-select" id="inboundMaterialType" style="font-size:14px;" onchange="onInboundTypeChange()">
+                                <option value="product">📦 成品</option>
+                                <option value="board">🧱 板材</option>
+                                <option value="shell">📦 壳子</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">选择产品 *</label>
+                            <select class="form-select" id="inboundProduct" style="font-size:14px;" required>
+                                <option value="">-- 请选择产品 --</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">入库数量 *</label>
+                            <input type="number" class="form-control" id="inboundQty" placeholder="请输入数量" min="1" step="1" required />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">存放位置（板材/壳子必填）</label>
+                            <input type="text" class="form-control" id="inboundLocation" placeholder="如：A区3架" />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">备注</label>
+                            <input type="text" class="form-control" id="inboundRemark" placeholder="如：采购到货、退货入库..." />
+                        </div>
+                        <div class="text-muted small" id="inboundCurrentStock">当前库存：0</div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button class="btn" onclick="confirmInbound()" style="background:#28a745;border-color:#28a745;color:#fff;">
+                        <i class="bi bi-check-lg"></i> 确认入库
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 出库模态框（无位置） -->
+    <div class="modal fade" id="outboundModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header" style="background:#fde8e8;border-bottom:2px solid #dc3545;">
+                    <h5 class="modal-title"><i class="bi bi-arrow-up-circle" style="color:#dc3545;"></i> 出库操作</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="outboundForm">
+                        <div class="mb-3">
+                            <label class="form-label">物料类型 *</label>
+                            <select class="form-select" id="outboundMaterialType" style="font-size:14px;" onchange="onOutboundTypeChange()">
+                                <option value="product">📦 成品</option>
+                                <option value="board">🧱 板材</option>
+                                <option value="shell">📦 壳子</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">选择产品 *</label>
+                            <select class="form-select" id="outboundProduct" style="font-size:14px;" required>
+                                <option value="">-- 请选择产品 --</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">出库数量 *</label>
+                            <input type="number" class="form-control" id="outboundQty" placeholder="请输入数量" min="1" step="1" required />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">备注</label>
+                            <input type="text" class="form-control" id="outboundRemark" placeholder="如：生产领料、销售出货..." />
+                        </div>
+                        <div class="text-muted small" id="outboundCurrentStock">当前库存：0</div>
+                        <div class="text-danger small mt-1" id="outboundWarning" style="display:none;">⚠️ 库存不足，当前库存不足以出库</div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button class="btn" onclick="confirmOutbound()" style="background:#dc3545;border-color:#dc3545;color:#fff;">
+                        <i class="bi bi-check-lg"></i> 确认出库
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 设置最低库存模态框 -->
+    <div class="modal fade" id="setMinStockModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-sm">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="bi bi-gear"></i> 设置最低库存</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="setMinStockForm">
+                        <input type="hidden" id="setMinStockProductId" />
+                        <div class="mb-2">
+                            <label class="form-label">产品</label>
+                            <div id="setMinStockProductName" style="font-weight:600;font-size:15px;">-</div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">最低库存预警值 *</label>
+                            <input type="number" class="form-control" id="setMinStockValue" placeholder="请输入最低库存量" min="0" step="1" required />
+                        </div>
+                        <div class="text-muted small">当库存低于此值时，将显示预警标记</div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button class="btn btn-primary-custom" onclick="confirmSetMinStock()">
+                        <i class="bi bi-check-lg"></i> 确认设置
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 库存流水模态框 -->
+    <div class="modal fade" id="inventoryLogModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header" style="background:#f0f0f0;border-bottom:2px solid #6c757d;">
+                    <h5 class="modal-title"><i class="bi bi-clock-history" style="color:#6c757d;"></i> 库存流水记录</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" style="max-height:60vh;overflow-y:auto;">
+                    <div class="mb-3">
+                        <select class="form-select form-select-sm" id="logProductFilter" style="width:auto;display:inline-block;font-size:13px;" onchange="renderInventoryLogs()">
+                            <option value="">全部产品</option>
+                        </select>
+                        <select class="form-select form-select-sm" id="logTypeFilter" style="width:auto;display:inline-block;font-size:13px;margin-left:8px;" onchange="renderInventoryLogs()">
+                            <option value="">全部类型</option>
+                            <option value="in">入库</option>
+                            <option value="out">出库</option>
+                            <option value="adjust">调整</option>
+                        </select>
+                        <button class="btn btn-sm btn-outline-custom" onclick="renderInventoryLogs()" style="margin-left:8px;">
+                            <i class="bi bi-arrow-counterclockwise"></i> 刷新
+                        </button>
+                    </div>
+                    <div id="inventoryLogList">
+                        <div class="text-center text-muted py-4">暂无流水记录</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+                    <button class="btn btn-outline-custom" onclick="exportInventoryLogs()">
+                        <i class="bi bi-file-earmark-excel"></i> 导出Excel
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+#page-inventory .table-wrap {
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid #e9edf2;
+    background: #fff;
+}
+#page-inventory .table-header {
+    background: #fff;
+}
+#page-inventory .inventory-table {
+    font-size: 13px;
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+    min-width: 1000px;
+}
+#page-inventory .inventory-table thead th {
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 20 !important;
+    background: #f8fafc !important;
+    font-weight: 600;
+    color: #3d4e62;
+    padding: 8px 8px;
+    border-bottom: 2px solid #e9edf2;
+    text-align: center;
+    white-space: nowrap;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.04);
+}
+#page-inventory .inventory-table thead th:first-child,
+#page-inventory .inventory-table tbody td:first-child {
+    position: sticky !important;
+    left: 0 !important;
+    z-index: 25 !important;
+    background: #f8fafc !important;
+}
+#page-inventory .inventory-table tbody td:first-child {
+    background: #fff !important;
+    z-index: 5 !important;
+}
+#page-inventory .inventory-table td {
+    padding: 4px 8px;
+    border-bottom: 1px solid #f0f2f5;
+    vertical-align: middle;
+    text-align: center;
+}
+#page-inventory .inventory-table td.left {
+    text-align: left;
+}
+#page-inventory .inventory-table tr:hover td {
+    background-color: #f8faff;
+}
+#page-inventory .inventory-table .stock-low {
+    color: #dc3545;
+    font-weight: 700;
+}
+#page-inventory .inventory-table .stock-normal {
+    color: #28a745;
+    font-weight: 600;
+}
+#page-inventory .inventory-checkbox {
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+    accent-color: #0066cc;
+    transform: scale(1.1);
+}
+#page-inventory .inventory-checkbox:hover {
+    transform: scale(1.2);
+}
+.col-resize-handle {
+    position: absolute;
+    right: -4px;
+    top: 0;
+    bottom: 0;
+    width: 8px;
+    cursor: col-resize;
+    z-index: 30;
+    user-select: none;
+    background: transparent;
+    transition: background 0.15s;
+}
+.col-resize-handle:hover,
+.col-resize-handle.active {
+    background: rgba(0, 102, 204, 0.25);
+}
+.col-resize-handle.dragging {
+    background: rgba(0, 102, 204, 0.4);
+}
+.col-resize-ghost {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: #0066cc;
+    z-index: 9999;
+    pointer-events: none;
+    display: none;
+}
+.col-resize-ghost.visible {
+    display: block;
+}
+body.resizing {
+    user-select: none !important;
+    cursor: col-resize !important;
+}
+/* 下拉菜单 */
+#page-inventory .dropdown-menu {
+    border-radius: 12px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+}
+#page-inventory .dropdown-menu .dropdown-item:hover {
+    background: #f0f2f5;
+}
+/* 滚动条 */
+#page-inventory .table-responsive::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+#page-inventory .table-responsive::-webkit-scrollbar-track {
+    background: #f0f2f5;
+    border-radius: 10px;
+}
+#page-inventory .table-responsive::-webkit-scrollbar-thumb {
+    background: #c0c8d4;
+    border-radius: 10px;
+}
+#page-inventory .table-responsive::-webkit-scrollbar-thumb:hover {
+    background: #a0aab8;
+}
+</style>

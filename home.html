@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>生产ERP · 杰德仕版</title>
+    <!-- 权限检查：必须放在最前面 -->
+    <script>
+        if (!localStorage.getItem('erp_token')) {
+            window.location.href = '/login.html';
+        }
+    </script>
+    <!-- 外部依赖 -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <!-- 自定义样式 -->
+    <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+<div class="d-flex">
+    <!-- ===== 侧边栏 ===== -->
+    <aside class="sidebar" id="sidebar">
+        <div class="logo d-flex align-items-center justify-content-between" style="position:relative;">
+            <div>
+                <i class="bi bi-box-seam"></i>
+                <span id="logoText">生产ERP</span>
+            </div>
+            <button class="btn btn-sm sidebar-collapse-btn" onclick="toggleSidebar()" title="折叠/展开侧边栏" style="z-index:10;border:none;color:#e8edf5;opacity:0.6;">
+                <i class="bi bi-chevron-left" id="collapseIcon"></i>
+            </button>
+        </div>
+        <div class="d-flex justify-content-between align-items-center mb-2">
+            <span class="text-white-50 small">导航菜单</span>
+            <div>
+                <button class="btn btn-sm btn-outline-light btn-manage-menu" onclick="toggleMenuManage()">
+                    <i class="bi bi-gear"></i>
+                </button>
+                <button class="btn btn-sm btn-outline-light" onclick="openMenuManager()" style="margin-left:4px;">
+                    <i class="bi bi-three-dots"></i>
+                </button>
+            </div>
+        </div>
+        <nav class="nav flex-column" id="menuNav"></nav>
+        <div class="mt-4 pt-3" style="border-top:1px solid rgba(255,255,255,0.06);">
+            <div class="d-flex align-items-center gap-2 text-white-50" style="font-size:13px;">
+                <i class="bi bi-person-circle"></i>
+                <span id="userDisplay">管理员 · 本地</span>
+            </div>
+        </div>
+    </aside>
+
+    <!-- ===== 主内容 ===== -->
+    <div class="main-wrap">
+        <div class="topbar">
+            <div class="d-flex align-items-center gap-3">
+                <button class="sidebar-toggle" id="sidebarToggle"><i class="bi bi-list"></i></button>
+                <span class="page-title" id="pageTitle">汇总预览 <small>生产概览</small></span>
+            </div>
+            <div class="actions">
+                <span class="backup-btn-group">
+                    <button class="btn btn-outline-custom btn-sm" onclick="exportData()"><i class="bi bi-download"></i> 备份数据</button>
+                    <button class="btn btn-outline-custom btn-sm" onclick="document.getElementById('importFileInput').click();"><i class="bi bi-upload"></i> 恢复数据</button>
+                    <input type="file" id="importFileInput" accept=".json" style="display:none" onchange="importData(event)" />
+                </span>
+                <span class="help-badge"><i class="bi bi-headset"></i> 帮助</span>
+                <span class="help-badge"><i class="bi bi-envelope"></i> 消息</span>
+                <span class="help-badge"><i class="bi bi-app-indicator"></i> 移动端</span>
+                <button class="btn btn-primary-custom" onclick="openModal('orderModal')"><i class="bi bi-plus-lg"></i> 新建订单</button>
+            </div>
+        </div>
+
+        <!-- 页面容器 -->
+        <div id="pageContainer"></div>
+    </div>
+</div>
+
+<!-- ================================================================ -->
+<!-- 全局模态框                                                       -->
+<!-- ================================================================ -->
+
+<!-- 新建订单模态框 -->
+<div class="modal fade" id="orderModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-clipboard2-plus"></i> 新建生产订单</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <button class="btn btn-outline-custom btn-excel-import" onclick="openExcelImport()"><i class="bi bi-file-earmark-excel"></i> 导入Excel表格</button>
+                    <span class="text-muted small ms-2">上传采购合同Excel，自动解析填充</span>
+                </div>
+                <div class="paste-import-area mb-3">
+                    <label class="form-label"><i class="bi bi-paste"></i> 粘贴文字解析（备选）</label>
+                    <textarea class="form-control" id="pasteText" rows="2" placeholder="从Excel/截图复制文字粘贴到这里，点击下方按钮解析"></textarea>
+                    <button class="btn btn-outline-custom btn-sm mt-1" onclick="parsePasteText()"><i class="bi bi-magic"></i> 解析文字填充</button>
+                    <div id="pasteParsePreview" class="parse-preview mt-2" style="display:none;">
+                        <span style="font-weight:600;">📌 解析结果：</span>
+                        <div id="pasteParseContent"></div>
+                    </div>
+                </div>
+                <hr />
+                <form id="orderForm">
+                    <div class="row g-2">
+                        <div class="col-md-3">
+                            <label class="form-label">客户 *</label>
+                            <input type="text" class="form-control" id="ordPartyName" placeholder="如 东莞市元谱科技有限公司" />
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">联系人 *</label>
+                            <input type="text" class="form-control" id="ordPartyContact" placeholder="如 黄玲玲" />
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">客户号（自动）</label>
+                            <input type="text" class="form-control" id="ordCustomerCode" placeholder="如 8009" readonly style="background:#f5f6fa;" />
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">订单号 *</label>
+                            <input type="text" class="form-control" id="ordOrderNo" placeholder="如 20260328002" required />
+                        </div>
+                    </div>
+                    <div class="row g-2 mt-2">
+                        <div class="col-md-3"><label class="form-label">产品编号</label><input type="text" class="form-control" id="ordProductCode" placeholder="如 10-PT02-8009-0011" /></div>
+                        <div class="col-md-3"><label class="form-label">产品名称 *</label><input type="text" class="form-control" id="ordProductName" placeholder="如 Hipporizz..." required /></div>
+                        <div class="col-md-3"><label class="form-label">规格型号/颜色/压印数字</label><input type="text" class="form-control" id="ordSpec" placeholder="如 Air11" /></div>
+                        <div class="col-md-3"><label class="form-label">颜色</label><input type="text" class="form-control" id="ordColor" placeholder="深灰" /></div>
+                    </div>
+                    <div class="row g-2 mt-2">
+                        <div class="col-md-2"><label class="form-label">压唛</label><input type="text" class="form-control" id="ordStamp" placeholder="如 自加300" /></div>
+                        <div class="col-md-2"><label class="form-label">订单数量 *</label><input type="number" class="form-control" id="ordQty" value="100" required /></div>
+                        <div class="col-md-2"><label class="form-label">物料-板材</label><input type="text" class="form-control" id="ordMaterialBoard" placeholder="√ 或 已齐" /></div>
+                        <div class="col-md-2"><label class="form-label">物料-机壳</label><input type="text" class="form-control" id="ordMaterialShell" placeholder="√ 或 已齐" /></div>
+                        <div class="col-md-2"><label class="form-label">下单日期</label><input type="date" class="form-control" id="ordOrderDate" /></div>
+                        <div class="col-md-2"><label class="form-label">交货日期</label><input type="date" class="form-control" id="ordDeliveryDate" /></div>
+                        <!-- ★★★ 同步到采购复选框 ★★★ -->
+                        <div class="col-md-3 d-flex align-items-end">
+                            <div class="form-check mb-1">
+                                <input class="form-check-input" type="checkbox" id="ordSyncToPurchase" checked style="width:18px;height:18px;cursor:pointer;" />
+                                <label class="form-check-label" for="ordSyncToPurchase" style="font-weight:500;font-size:14px;color:#0a2540;cursor:pointer;">
+                                    📦 同步到采购管理
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row g-2 mt-2">
+                        <div class="col-md-3"><label class="form-label">板材编号</label><input type="text" class="form-control" id="ordBoardCode" placeholder="如 5409-10" /></div>
+                        <div class="col-md-3"><label class="form-label">壳子库存</label><input type="text" class="form-control" id="ordShellStock" placeholder="如 有板300" /></div>
+                        <div class="col-md-6"><label class="form-label">备注（进度汇总）</label><input type="text" class="form-control" id="ordRemark" placeholder="已打送货单标签" /></div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button class="btn btn-primary-custom" onclick="saveOrder()">确认创建</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Excel导入模态框 -->
+<div class="modal fade" id="excelImportModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header"><h5 class="modal-title"><i class="bi bi-file-earmark-excel" style="color:#1e7e34;"></i> 导入Excel采购合同</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <div class="modal-body">
+                <div class="excel-drop-area" id="excelDropArea" onclick="document.getElementById('excelFileInput').click();">
+                    <i class="bi bi-cloud-upload"></i>
+                    <p style="margin-top:10px;font-weight:500;">点击上传 Excel 文件（.xlsx）</p>
+                    <p class="text-muted small">支持标准采购合同格式，自动提取甲方信息、订单号、物料数据</p>
+                    <input type="file" id="excelFileInput" accept=".xlsx,.xls" />
+                </div>
+                <div id="excelParseResult" style="display:none; margin-top:16px;">
+                    <h6><i class="bi bi-check-circle-fill text-success"></i> 解析结果</h6>
+                    <div id="excelResultContent" class="excel-parse-result"></div>
+                    <div class="mt-3">
+                        <button class="btn btn-primary-custom" onclick="applyExcelResult()"><i class="bi bi-magic"></i> 填充到订单表单</button>
+                        <button class="btn btn-outline-custom" onclick="clearExcelResult()"><i class="bi bi-arrow-counterclockwise"></i> 重新上传</button>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer"><button class="btn btn-secondary" data-bs-dismiss="modal">关闭</button></div>
+        </div>
+    </div>
+</div>
+
+<!-- 订单列设置模态框 -->
+<div class="modal fade" id="orderColumnSettingsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header"><h5 class="modal-title">订单管理 - 列设置</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <div class="modal-body column-settings-body" id="orderColumnSettingsContent"></div>
+            <div class="modal-footer"><button class="btn btn-secondary" data-bs-dismiss="modal">关闭</button><button class="btn btn-primary-custom" onclick="resetOrderColumns()">恢复默认</button></div>
+        </div>
+    </div>
+</div>
+
+<!-- 订单详情模态框 -->
+<div class="modal fade" id="orderDetailModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-pencil-square"></i> 订单/出货详情</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="detail-manage-bar">
+                    <button class="btn btn-sm btn-outline-custom btn-manage-detail" onclick="toggleDetailManage()"><i class="bi bi-gear"></i> 管理字段</button>
+                    <button class="btn btn-sm btn-outline-custom" onclick="openRecoverDetailModal()"><i class="bi bi-arrow-counterclockwise"></i> 恢复字段</button>
+                    <button class="btn btn-sm btn-outline-custom btn-add-column" onclick="openAddDetailFieldModal()"><i class="bi bi-plus-square"></i> 新增自定义字段</button>
+                    <button class="btn btn-sm btn-outline-custom btn-excel-export" onclick="exportOrderDetail()"><i class="bi bi-file-earmark-excel"></i> 导出详情</button>
+                </div>
+                <form id="orderDetailForm">
+                    <input type="hidden" id="detailOrderId" />
+                    <div class="detail-grid" id="detailFieldsContainer"></div>
+                    <div class="row g-3 mt-3" id="shipmentExtraFields" style="display:block;">
+                        <div class="col-md-4">
+                            <label class="form-label">出货状态</label>
+                            <select class="form-select" id="detailShipmentStatus">
+                                <option value="待出货">待出货</option>
+                                <option value="质检完成-已送货">质检完成-已送货</option>
+                                <option value="质检未通过-返单">质检未通过-返单</option>
+                                <option value="已送货完成">已送货完成</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">质检状态</label>
+                            <select class="form-select" id="detailQualityStatus">
+                                <option value="待质检">待质检</option>
+                                <option value="质检中">质检中</option>
+                                <option value="质检完成">质检完成</option>
+                                <option value="质检未通过-返单">质检未通过-返单</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">来源</label>
+                            <input type="text" class="form-control" id="detailSource" readonly style="background:#f0f2f5;" />
+                        </div>
+                    </div>
+                    <!-- 送货历史 -->
+                    <div class="mt-3">
+                        <h6><i class="bi bi-clock-history"></i> 送货历史</h6>
+                        <div id="deliveryHistoryContainer"></div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+                <button class="btn btn-success" onclick="pushToProduction()"><i class="bi bi-arrow-right-circle"></i> 推送到生产管理</button>
+                <button class="btn btn-warning" onclick="pushToOutsource()"><i class="bi bi-send"></i> 推送到外发管理</button>
+                <button class="btn btn-primary-custom" onclick="saveOrderDetail()">保存修改</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 恢复详情字段 -->
+<div class="modal fade" id="recoverDetailModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header"><h5 class="modal-title"><i class="bi bi-arrow-counterclockwise"></i> 恢复已删除字段</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <div class="modal-body"><div id="recoverDetailList" class="recover-list"></div></div>
+            <div class="modal-footer"><button class="btn btn-secondary" data-bs-dismiss="modal">取消</button><button class="btn btn-primary-custom" onclick="recoverDetailFields()">恢复选中</button></div>
+        </div>
+    </div>
+</div>
+
+<!-- 新增详情自定义字段 -->
+<div class="modal fade" id="addDetailFieldModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header"><h5 class="modal-title"><i class="bi bi-plus-square"></i> 新增自定义字段</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <div class="modal-body">
+                <div class="mb-3"><label class="form-label">字段名称 *</label><input type="text" class="form-control" id="newDetailFieldName" placeholder="如 包装要求" /></div>
+                <div class="mb-3"><label class="form-label">数据类型</label><select class="form-select" id="newDetailFieldType"><option value="text">文本</option><option value="number">数字</option><option value="date">日期</option><option value="textarea">多行文本</option></select></div>
+            </div>
+            <div class="modal-footer"><button class="btn btn-secondary" data-bs-dismiss="modal">取消</button><button class="btn btn-primary-custom" onclick="addDetailCustomField()">添加字段</button></div>
+        </div>
+    </div>
+</div>
+
+<!-- 仪表板恢复卡片 -->
+<div class="modal fade" id="recoverDashboardModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header"><h5 class="modal-title"><i class="bi bi-arrow-counterclockwise"></i> 恢复已删除卡片</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <div class="modal-body"><div id="recoverDashboardList" class="recover-list"></div></div>
+            <div class="modal-footer"><button class="btn btn-secondary" data-bs-dismiss="modal">取消</button><button class="btn btn-primary-custom" onclick="recoverDashboardCards()">恢复选中</button></div>
+        </div>
+    </div>
+</div>
+
+<!-- 添加仪表板卡片 -->
+<div class="modal fade" id="addDashboardCardModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header"><h5 class="modal-title"><i class="bi bi-plus-square"></i> 添加自定义卡片</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <div class="modal-body">
+                <div class="mb-3"><label class="form-label">卡片名称 *</label><input type="text" class="form-control" id="newCardName" placeholder="如 待对账" /></div>
+                <div class="mb-3"><label class="form-label">卡片类型</label><select class="form-select" id="newCardType"><option value="stat">统计卡片</option><option value="action">快捷操作</option></select></div>
+                <div class="mb-3" id="statCardConfig"><label class="form-label">数据字段（统计卡片专用）</label><select class="form-select" id="newCardStatField"><option value="total">总订单</option><option value="production">生产中</option><option value="shipment">待出货</option><option value="reconcile">待对账</option><option value="quality">待质检</option></select></div>
+                <div class="mb-3" id="actionCardConfig" style="display:none;"><label class="form-label">操作按钮文字</label><input type="text" class="form-control" id="newCardActionLabel" placeholder="如 生成对账单" /></div>
+            </div>
+            <div class="modal-footer"><button class="btn btn-secondary" data-bs-dismiss="modal">取消</button><button class="btn btn-primary-custom" onclick="addDashboardCard()">添加卡片</button></div>
+        </div>
+    </div>
+</div>
+
+<!-- 菜单管理器 -->
+<div class="modal fade" id="menuManagerModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header"><h5 class="modal-title"><i class="bi bi-list-ul"></i> 菜单管理</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <div class="modal-body">
+                <h6>恢复已删除菜单</h6>
+                <div id="recoverMenuList" class="recover-list"></div>
+                <hr />
+                <h6>添加自定义菜单</h6>
+                <div class="mb-2"><label class="form-label">菜单名称 *</label><input type="text" class="form-control" id="newMenuName" placeholder="如 报表中心" /></div>
+                <div class="mb-2"><label class="form-label">图标（Bootstrap图标类）</label><input type="text" class="form-control" id="newMenuIcon" placeholder="如 bi-bar-chart" value="bi-file-earmark-text" /></div>
+                <div class="mb-2"><label class="form-label">页面标识 *（唯一）</label><input type="text" class="form-control" id="newMenuPage" placeholder="如 report" /></div>
+                <div class="mb-2"><label class="form-label">页面内容（可为空）</label><textarea class="form-control" id="newMenuContent" rows="2" placeholder="自定义页面HTML（可选）"></textarea></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+                <button class="btn btn-primary-custom" onclick="recoverMenus()">恢复选中</button>
+                <button class="btn btn-success" onclick="addCustomMenu()">添加菜单</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 生产单详情模态框 -->
+<div class="modal fade" id="productionDetailModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-gear"></i> 生产单详情</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="productionDetailForm">
+                    <input type="hidden" id="prodDetailId" />
+                    <div class="row g-3">
+                        <div class="col-md-6"><label class="form-label">生产单号</label><input type="text" class="form-control" id="prodDetailNo" readonly style="background:#f0f2f5;" /></div>
+                        <div class="col-md-6"><label class="form-label">关联订单</label><input type="text" class="form-control" id="prodDetailOrderNo" readonly style="background:#f0f2f5;" /></div>
+                        <div class="col-md-6"><label class="form-label">产品名称</label><input type="text" class="form-control" id="prodDetailProduct" readonly style="background:#f0f2f5;" /></div>
+                        <div class="col-md-3"><label class="form-label">计划数量</label><input type="number" class="form-control" id="prodDetailPlanQty" readonly style="background:#f0f2f5;" /></div>
+                        <div class="col-md-3"><label class="form-label">合格数量</label><input type="number" class="form-control" id="prodDetailQualified" /></div>
+                        <div class="col-md-6"><label class="form-label">当前阶段</label>
+                            <select class="form-select" id="prodDetailStage">
+                                <option value="开料">开料</option>
+                                <option value="压板材">压板材</option>
+                                <option value="出成品">出成品</option>
+                                <option value="已完成-待送货">已完成-待送货</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6"><label class="form-label">状态（只读）</label><input type="text" class="form-control" id="prodDetailStatus" readonly style="background:#f0f2f5;" /></div>
+                        <div class="col-md-12"><label class="form-label">备注</label><textarea class="form-control" id="prodDetailRemark" rows="2"></textarea></div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+                <button class="btn btn-primary-custom" onclick="saveProductionDetail()">保存修改</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 外发新建模态框 -->
+<div class="modal fade" id="outsourceModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header"><h5 class="modal-title"><i class="bi bi-send-plus"></i> 新建外发单</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <div class="modal-body">
+                <form id="outsourceForm">
+                    <div class="row g-3">
+                        <div class="col-md-6"><label class="form-label">关联订单号 *</label><select class="form-select" id="outOrderSelect"><option value="">-- 请选择订单 --</option></select></div>
+                        <div class="col-md-6"><label class="form-label">外发单号</label><input type="text" class="form-control" id="outOutsourceNo" placeholder="自动生成" readonly style="background:#f0f2f5;" /></div>
+                        <div class="col-md-4"><label class="form-label">外发状态 *</label><select class="form-select" id="outStatus"><option value="待外发">待外发</option><option value="外发中">外发中</option><option value="已完成-待出货">已完成-待出货</option></select></div>
+                        <div class="col-md-4"><label class="form-label">存放位置</label><input type="text" class="form-control" id="outLocation" placeholder="如 5楼" value="5楼" /></div>
+                        <div class="col-md-4"><label class="form-label">外发日期</label><input type="date" class="form-control" id="outDate" /></div>
+                        <div class="col-md-6"><label class="form-label">外发供应商</label><input type="text" class="form-control" id="outSupplier" placeholder="供应商名称" /></div>
+                        <div class="col-md-6"><label class="form-label">预计返回日期</label><input type="date" class="form-control" id="outReturnDate" /></div>
+                        <div class="col-md-12"><label class="form-label">备注</label><textarea class="form-control" id="outRemark" rows="2" placeholder="外发备注"></textarea></div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer"><button class="btn btn-secondary" data-bs-dismiss="modal">取消</button><button class="btn btn-primary-custom" onclick="saveOutsource()">确认创建</button></div>
+        </div>
+    </div>
+</div>
+
+<!-- 外发详情模态框 -->
+<div class="modal fade" id="outsourceDetailModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header"><h5 class="modal-title"><i class="bi bi-pencil-square"></i> 外发详情</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <div class="modal-body">
+                <form id="outsourceDetailForm">
+                    <input type="hidden" id="outDetailId" />
+                    <div class="row g-3">
+                        <div class="col-md-6"><label class="form-label">外发单号</label><input type="text" class="form-control" id="outDetailNo" readonly style="background:#f0f2f5;" /></div>
+                        <div class="col-md-6"><label class="form-label">关联订单</label><input type="text" class="form-control" id="outDetailOrderNo" readonly style="background:#f0f2f5;" /></div>
+                        <div class="col-md-6"><label class="form-label">产品名称</label><input type="text" class="form-control" id="outDetailProduct" readonly style="background:#f0f2f5;" /></div>
+                        <div class="col-md-3"><label class="form-label">数量</label><input type="text" class="form-control" id="outDetailQty" readonly style="background:#f0f2f5;" /></div>
+                        <div class="col-md-3"><label class="form-label">客户号</label><input type="text" class="form-control" id="outDetailCustomer" readonly style="background:#f0f2f5;" /></div>
+                        <div class="col-md-4"><label class="form-label">外发状态</label><select class="form-select" id="outDetailStatus"><option value="待外发">待外发</option><option value="外发中">外发中</option><option value="已完成-待出货">已完成-待出货</option></select></div>
+                        <div class="col-md-4"><label class="form-label">存放位置</label><input type="text" class="form-control" id="outDetailLocation" /></div>
+                        <div class="col-md-4"><label class="form-label">外发日期</label><input type="date" class="form-control" id="outDetailDate" /></div>
+                        <div class="col-md-6"><label class="form-label">外发供应商</label><input type="text" class="form-control" id="outDetailSupplier" /></div>
+                        <div class="col-md-6"><label class="form-label">预计返回日期</label><input type="date" class="form-control" id="outDetailReturnDate" /></div>
+                        <div class="col-md-12"><label class="form-label">备注</label><textarea class="form-control" id="outDetailRemark" rows="2"></textarea></div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer"><button class="btn btn-secondary" data-bs-dismiss="modal">关闭</button><button class="btn btn-primary-custom" onclick="saveOutsourceDetail()">保存修改</button></div>
+        </div>
+    </div>
+</div>
+
+<!-- 生产列设置 -->
+<div class="modal fade" id="prodColumnSettingsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header"><h5 class="modal-title">生产管理 - 列设置</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <div class="modal-body column-settings-body" id="prodColumnSettingsContent"></div>
+            <div class="modal-footer"><button class="btn btn-secondary" data-bs-dismiss="modal">关闭</button><button class="btn btn-primary-custom" onclick="resetProdColumns()">恢复默认</button></div>
+        </div>
+    </div>
+</div>
+
+<!-- 出货列设置 -->
+<div class="modal fade" id="shipColumnSettingsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header"><h5 class="modal-title">出货管理 - 列设置</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <div class="modal-body column-settings-body" id="shipColumnSettingsContent"></div>
+            <div class="modal-footer"><button class="btn btn-secondary" data-bs-dismiss="modal">关闭</button><button class="btn btn-primary-custom" onclick="resetShipColumns()">恢复默认</button></div>
+        </div>
+    </div>
+</div>
+
+<!-- 外发列设置 -->
+<div class="modal fade" id="outColumnSettingsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header"><h5 class="modal-title">外发管理 - 列设置</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <div class="modal-body column-settings-body" id="outColumnSettingsContent"></div>
+            <div class="modal-footer"><button class="btn btn-secondary" data-bs-dismiss="modal">关闭</button><button class="btn btn-primary-custom" onclick="resetOutColumns()">恢复默认</button></div>
+        </div>
+    </div>
+</div>
+
+<!-- 本次送货数量输入模态框 -->
+<div class="modal fade" id="deliveryQtyModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-pencil-square"></i> 输入本次送货数量</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" style="max-height:60vh;overflow-y:auto;">
+                <div id="deliveryQtyList"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button class="btn btn-primary-custom" id="confirmDeliveryQtyBtn">确认打印</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 打印预览模态框 -->
+<div class="modal fade" id="printPreviewModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header" style="border-bottom:2px solid #0066cc;">
+                <h5 class="modal-title" id="printPreviewTitle">
+                    <i class="bi bi-printer" style="color:#0066cc;"></i> 打印预览
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="关闭"></button>
+            </div>
+            <div class="modal-body" id="printPreviewBody" style="padding:20px;background:#f8fafc;max-height:75vh;overflow-y:auto;">
+                <div id="printPreviewContent" style="background:#fff;padding:30px;border-radius:8px;box-shadow:0 2px 12px rgba(0,0,0,0.06);">
+                    <div class="text-center text-muted py-5">
+                        <i class="bi bi-printer" style="font-size:48px;opacity:0.3;"></i>
+                        <p class="mt-2">请选择订单后点击打印</p>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer" style="border-top:1px solid #e9edf2;">
+                <button class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+                <button class="btn btn-warning" onclick="goBackToDeliveryQty()">
+                    <i class="bi bi-arrow-return-left"></i> 回退重填
+                </button>
+                <button class="btn btn-primary-custom" onclick="executePrintPreview()" id="printPreviewBtn">
+                    <i class="bi bi-printer"></i> 打印
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 每箱数量输入模态框（标签打印） -->
+<div class="modal fade" id="boxQtyModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-box-seam"></i> 输入每箱数量</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">本次送货总数量</label>
+                    <div id="boxQtyTotal" style="font-size:20px;font-weight:700;color:#0066cc;"></div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">每箱装 <span style="color:#dc3545;">*</span></label>
+                    <input type="number" class="form-control" id="boxQtyInput" min="1" step="1" placeholder="请输入每箱数量" />
+                    <div class="form-text">系统将自动计算需要打印的标签张数</div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">预计打印标签数</label>
+                    <div id="boxQtyResult" style="font-size:18px;font-weight:700;color:#0a2540;">0 张</div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button class="btn btn-primary-custom" id="confirmBoxQtyBtn">生成标签</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 占位模态框 -->
+<div class="modal fade" id="productionModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog"><div class="modal-content"><div class="modal-header"><h5 class="modal-title"><i class="bi bi-gear"></i> 新增生产单</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><p>生产功能待扩展</p></div><div class="modal-footer"><button class="btn btn-secondary" data-bs-dismiss="modal">取消</button><button class="btn btn-primary-custom" onclick="alert('功能开发中')">确认</button></div></div></div></div>
+<div class="modal fade" id="qualityModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog"><div class="modal-content"><div class="modal-header"><h5 class="modal-title"><i class="bi bi-check2-circle"></i> 新增质检</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><p>质检功能待扩展</p></div><div class="modal-footer"><button class="btn btn-secondary" data-bs-dismiss="modal">取消</button><button class="btn btn-primary-custom" onclick="alert('功能开发中')">确认</button></div></div></div></div>
+<div class="modal fade" id="shipmentModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog"><div class="modal-content"><div class="modal-header"><h5 class="modal-title"><i class="bi bi-truck"></i> 新建出货单</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><p>出货功能待扩展</p></div><div class="modal-footer"><button class="btn btn-secondary" data-bs-dismiss="modal">取消</button><button class="btn btn-primary-custom" onclick="alert('功能开发中')">确认</button></div></div></div></div>
+<div class="modal fade" id="customerModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog"><div class="modal-content"><div class="modal-header"><h5 class="modal-title"><i class="bi bi-person-plus"></i> 新增客户</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><p>客户功能待扩展</p></div><div class="modal-footer"><button class="btn btn-secondary" data-bs-dismiss="modal">取消</button><button class="btn btn-primary-custom" onclick="alert('功能开发中')">确认</button></div></div></div></div>
+<div class="modal fade" id="productModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="bi bi-box"></i> <span id="productModalTitle">新增产品</span></h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <form id="productForm">
+          <input type="hidden" id="productId" name="id">
+          <div class="row g-3">
+            <div class="col-md-4">
+              <label class="form-label">产品编码</label>
+              <input type="text" class="form-control" id="productCode" name="code" required>
+            </div>
+            <div class="col-md-8">
+              <label class="form-label">产品名称</label>
+              <input type="text" class="form-control" id="productName" name="name" required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">客户编号</label>
+              <input type="text" class="form-control" id="customerCode" name="customerCode">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">规格</label>
+              <input type="text" class="form-control" id="productSpec" name="spec">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">库存</label>
+              <input type="number" class="form-control" id="productStock" name="stock" min="0" value="0">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">状态</label>
+              <select class="form-select" id="productStatus" name="status">
+                <option value="在库">在库</option>
+                <option value="待出库">待出库</option>
+                <option value="已停售">已停售</option>
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">备注</label>
+              <input type="text" class="form-control" id="productRemark" name="remark">
+            </div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+        <button class="btn btn-primary-custom" type="button" id="productSubmitBtn">保存</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 脚本加载 ===== -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<!-- 自定义 JS -->
+<script src="js/toast.js"></script>
+<script src="js/highlight.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/app.js?v=2026"></script>
+    <script src="js/orders.js?v=2026"></script>
+    <script src="js/dashboard.js?v=2026"></script>
+<script src="js/production.js"></script>
+<script src="js/outsource.js"></script>
+<script src="js/shipment.js"></script>
+<script src="js/quality.js"></script>
+<script src="js/customers.js"></script>
+<script src="js/products.js"></script>
+<script src="js/reconciliation.js"></script>
+<script src="js/purchase.js"></script>
+<script src="js/purchaseDetail.js"></script>
+<script src="js/inventory.js"></script>
+
+<script>
+    // 页面初始化
+    document.addEventListener('DOMContentLoaded', function() {
+        loadDataFromStorage();
+        renderMenu();
+        switchPage('dashboard');
+        // 恢复侧边栏折叠状态
+        restoreSidebarState();
+        // 侧边栏切换（移动端）
+        document.getElementById('sidebarToggle').addEventListener('click', function() {
+            document.getElementById('sidebar').classList.toggle('open');
+        });
+        document.addEventListener('click', function(e) {
+            var sidebar = document.getElementById('sidebar');
+            var toggle = document.getElementById('sidebarToggle');
+            if (window.innerWidth <= 992 && sidebar.classList.contains('open') &&
+                !sidebar.contains(e.target) && !toggle.contains(e.target)) {
+                sidebar.classList.remove('open');
+            }
+        });
+    });
+</script>
+</body>
+</html>

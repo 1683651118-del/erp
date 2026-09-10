@@ -1,0 +1,63 @@
+<div id="page-products">
+    <div class="table-wrap">
+        <div class="table-header">
+            <span style="font-weight:600;font-size:16px;">📦 产品列表</span>
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+                <select id="productCustomerFilter" class="form-select form-select-sm" style="width:auto;" onchange="initProducts()">
+                    <option value="">全部客户</option>
+                </select>
+                <button class="btn btn-sm btn-outline-custom btn-excel-import" onclick="document.getElementById('productExcelInput').click()">
+                    <i class="bi bi-file-earmark-excel"></i> 导入Excel
+                </button>
+                <button class="btn btn-sm btn-outline-custom btn-excel-export" onclick="exportProductTemplate()">
+                    <i class="bi bi-download"></i> 导出模板
+                </button>
+                <button class="btn btn-sm btn-outline-custom btn-excel-import" onclick="document.getElementById('templateImportInput').click()">
+                    <i class="bi bi-upload"></i> 模板导入
+                </button>
+                <input type="file" id="templateImportInput" accept=".xlsx,.xls" style="display:none" onchange="importProductTemplate(event)" />
+                <input type="file" id="productExcelInput" accept=".xlsx,.xls" style="display:none" onchange="importProductsFromExcel(event)" />
+                <button class="btn btn-sm btn-outline-danger" onclick="clearAllProducts()">
+                    <i class="bi bi-trash3"></i> 清空产品
+                </button>
+                <button class="btn btn-sm btn-primary-custom" onclick="openProductModal()">
+                    <i class="bi bi-plus-lg"></i> 新增产品
+                </button>
+            </div>
+        </div>
+
+        <!-- ★★★ 客户号快速切换栏 + 搜索框 ★★★ -->
+        <div id="customerQuickFilterBar" style="padding: 8px 24px 12px 24px; border-bottom: 1px solid #f0f2f5; display: flex; flex-wrap: wrap; align-items: center; gap: 8px;">
+            <!-- 搜索框 -->
+            <div style="display:flex; align-items:center; gap:6px; margin-right:12px; flex-shrink:0;">
+                <i class="bi bi-search" style="color:#999; font-size:14px;"></i>
+                <input type="text" id="productSearchInput" class="form-control form-control-sm" placeholder="搜索产品名称/编码/客户号..." style="width:220px; font-size:13px; border-radius:20px; padding:4px 14px; border:1px solid #d0d8e0;" oninput="initProducts()" />
+                <button class="btn btn-sm btn-outline-custom" onclick="document.getElementById('productSearchInput').value=''; initProducts();" style="padding:2px 8px; font-size:12px; border-radius:20px;" title="清空搜索">
+                    <i class="bi bi-x-circle"></i>
+                </button>
+            </div>
+            <span style="font-size:13px;color:#6c7a8a;font-weight:500;margin-right:4px;">客户号：</span>
+            <button class="btn btn-sm btn-outline-custom customer-filter-btn active" data-code="" onclick="setCustomerFilter('')" style="font-size:12px;padding:2px 14px;border-radius:14px;">全部</button>
+            <span id="customerQuickFilterItems"></span>
+            <span style="font-size:12px;color:#999;margin-left:8px;" id="customerFilterCount"></span>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>产品编码</th>
+                        <th>款式名称</th>
+                        <th>客户号</th>
+                        <th>磁石明细</th>
+                        <th>板材</th>
+                        <th>壳子</th>
+                        <th>单位</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody id="productBody"></tbody>
+            </table>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,57 @@
+<div id="page-dashboard">
+    <div class="dashboard-manage-bar">
+        <button class="btn btn-sm btn-outline-custom btn-manage-dashboard" onclick="toggleDashboardManage()"><i class="bi bi-gear"></i> 管理卡片</button>
+        <button class="btn btn-sm btn-outline-custom" onclick="openRecoverDashboardModal()"><i class="bi bi-arrow-counterclockwise"></i> 恢复卡片</button>
+        <button class="btn btn-sm btn-outline-custom btn-add-column" onclick="openAddDashboardCardModal()"><i class="bi bi-plus-square"></i> 添加卡片</button>
+    </div>
+    <div class="row g-3 mb-3 align-items-end" id="monthStatsRow">
+        <div class="col-md-2">
+            <label class="form-label fw-bold" style="font-size:14px;color:#3d4e62;">📅 选择月份</label>
+            <input type="month" class="form-control" id="monthPicker" style="border-radius:10px;border:1px solid #d0d8e0;font-size:14px;" />
+        </div>
+        <div class="col-md-10">
+            <div class="row g-2">
+                <div class="col-md-3">
+                    <div class="stat-card-mini p-3 text-center border rounded" style="background:#e6f0ff;border-color:#b8d4f0;border-radius:12px;">
+                        <div class="small text-muted" style="font-size:12px;">📊 当月总订单</div>
+                        <div class="h4 fw-bold" id="monthTotal" style="color:#0047ab;">0</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="stat-card-mini p-3 text-center border rounded" style="background:#f0f4ff;border-color:#c8d8f0;border-radius:12px;">
+                        <div class="small text-muted" style="font-size:12px;">📦 总数量</div>
+                        <div class="h4 fw-bold" id="monthTotalQty" style="color:#0052a3;">0</div>
+                    </div>
+                </div>
+             <div class="col-md-3">
+    <div class="stat-card-mini p-3 text-center border rounded" style="background:#fef3e0;border-color:#f5d6a0;border-radius:12px;">
+        <div class="small text-muted" style="font-size:12px;">⏳ 未交总数</div>
+        <div class="h4 fw-bold" id="monthUnpaid" style="color:#a86800;">0</div>
+    </div>
+</div>
+<div class="col-md-3">
+    <div class="stat-card-mini p-3 text-center border rounded" style="background:#e3f5ec;border-color:#a8d5b8;border-radius:12px;">
+        <div class="small text-muted" style="font-size:12px;">✅ 已交总数</div>
+        <div class="h4 fw-bold" id="monthPaid" style="color:#0f7b4a;">0</div>
+    </div>
+</div>
+            </div>
+        </div>
+    </div>
+    <div class="row g-4 mb-4" id="statsCardsContainer"></div>
+    <div class="row g-4 mb-4">
+        <div class="col-lg-12">
+            <div class="stat-card" style="padding:18px 20px;cursor:default;">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+                    <span style="font-weight:600;font-size:16px;">📌 快捷操作</span>
+                </div>
+                <div class="quick-actions-horizontal" id="quickActionsContainer"></div>
+            </div>
+        </div>
+    </div>
+    <div class="table-wrap">
+        <div class="table-header"><span style="font-weight:600;font-size:16px;">📋 最近生产订单</span><a href="#" class="btn btn-sm btn-outline-custom" onclick="switchPage('orders')">查看全部 →</a></div>
+        <div class="table-responsive"><table class="table" id="recentOrdersTable"><thead><tr><th>状态</th><th>订单号</th><th>客户</th><th>产品</th><th>数量</th><th>操作</th></tr></thead><tbody id="recentOrdersBody"></tbody></table></div>
+    </div>
+    <div class="mt-4 invite-card"><div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;"><div class="avatars"><span class="avatar">张</span><span class="avatar">王</span><span class="avatar">李</span><span class="avatar">刘</span><span class="avatar more">+4</span></div><span style="font-weight:500;">8 位成员 · 邀请同事协作</span></div><button class="btn btn-primary-custom btn-sm" onclick="alert('邀请链接已复制')"><i class="bi bi-person-plus"></i> 邀请成员</button></div>
+</div>

@@ -1,0 +1,508 @@
+<div id="page-purchase">
+    <div class="table-wrap">
+        <!-- 顶部操作栏 -->
+        <div class="table-header" style="padding:12px 20px;border-bottom:1px solid #f0f2f5;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;background:#fff;">
+            <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+                <span style="font-weight:600;font-size:16px;">📦 采购订单</span>
+                <span style="font-size:13px;color:#6c7a8a;" id="purchaseTotalCount">共 0 个订单</span>
+                <span style="font-size:12px;color:#6c7a8a;background:#f0f2f5;padding:2px 12px;border-radius:12px;" id="selectedOrderCount">已选 0 个</span>
+                <!-- ★★★ 搜索入口（左侧） ★★★ -->
+                <div style="display:flex;align-items:center;gap:6px;margin-left:8px;">
+                    <i class="bi bi-search" style="color:#999;font-size:14px;"></i>
+                    <input type="text" id="purchaseSearchInput" class="form-control form-control-sm" placeholder="搜索订单号/产品名称..." style="width:200px;font-size:13px;border-radius:20px;padding:4px 14px;border:1px solid #d0d8e0;background:#f8fafc;" oninput="filterPurchaseOrders()" />
+                    <button class="btn btn-sm btn-outline-custom" onclick="document.getElementById('purchaseSearchInput').value='';filterPurchaseOrders();" style="padding:2px 8px;font-size:12px;border-radius:20px;" title="清空搜索">
+                        <i class="bi bi-x-circle"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="d-flex gap-2 flex-wrap align-items-center">
+                <!-- 列设置 -->
+                <button class="btn btn-sm" onclick="openPurchaseColumnSettings()" style="background:#6c757d;border-color:#6c757d;color:#fff;border-radius:8px;padding:6px 16px;font-weight:500;border:none;">
+                    <i class="bi bi-layout-three-columns"></i> 列设置
+                </button>
+                <!-- 多色底色下拉菜单 -->
+                <div class="btn-group">
+                    <button class="btn btn-sm dropdown-toggle" data-bs-toggle="dropdown" style="background:#ffc107;border-color:#ffc107;color:#0a2540;border-radius:8px 0 0 8px;padding:6px 16px;font-weight:500;border:none;">
+                        <i class="bi bi-paint-bucket"></i> 添加底色
+                    </button>
+                    <ul class="dropdown-menu" style="padding:8px;min-width:auto;border-radius:12px;box-shadow:0 4px 16px rgba(0,0,0,0.12);">
+                        <li style="display:flex;gap:6px;padding:4px;">
+                            <span style="display:inline-block;width:30px;height:30px;border-radius:50%;background:#fff3cd;cursor:pointer;border:2px solid #ddd;transition:all 0.15s;" onclick="applyHighlightColor('#fff3cd')" title="黄色" onmouseover="this.style.borderColor='#0a2540';this.style.transform='scale(1.1)'" onmouseout="this.style.borderColor='#ddd';this.style.transform='scale(1)'"></span>
+                            <span style="display:inline-block;width:30px;height:30px;border-radius:50%;background:#d4edda;cursor:pointer;border:2px solid #ddd;transition:all 0.15s;" onclick="applyHighlightColor('#d4edda')" title="绿色" onmouseover="this.style.borderColor='#0a2540';this.style.transform='scale(1.1)'" onmouseout="this.style.borderColor='#ddd';this.style.transform='scale(1)'"></span>
+                            <span style="display:inline-block;width:30px;height:30px;border-radius:50%;background:#f8d7da;cursor:pointer;border:2px solid #ddd;transition:all 0.15s;" onclick="applyHighlightColor('#f8d7da')" title="红色" onmouseover="this.style.borderColor='#0a2540';this.style.transform='scale(1.1)'" onmouseout="this.style.borderColor='#ddd';this.style.transform='scale(1)'"></span>
+                            <span style="display:inline-block;width:30px;height:30px;border-radius:50%;background:#cce5ff;cursor:pointer;border:2px solid #ddd;transition:all 0.15s;" onclick="applyHighlightColor('#cce5ff')" title="蓝色" onmouseover="this.style.borderColor='#0a2540';this.style.transform='scale(1.1)'" onmouseout="this.style.borderColor='#ddd';this.style.transform='scale(1)'"></span>
+                            <span style="display:inline-block;width:30px;height:30px;border-radius:50%;background:#e2d9f3;cursor:pointer;border:2px solid #ddd;transition:all 0.15s;" onclick="applyHighlightColor('#e2d9f3')" title="紫色" onmouseover="this.style.borderColor='#0a2540';this.style.transform='scale(1.1)'" onmouseout="this.style.borderColor='#ddd';this.style.transform='scale(1)'"></span>
+                        </li>
+                        <li><hr class="dropdown-divider" style="margin:4px 0;"></li>
+                        <li><a class="dropdown-item" href="#" onclick="clearHighlight()" style="font-size:14px;border-radius:6px;"><i class="bi bi-eraser"></i> 清除底色</a></li>
+                    </ul>
+                </div>
+                <!-- 其他按钮 -->
+                <button class="btn btn-sm" onclick="openSupplierManager()" style="background:#ff8c00;border-color:#ff8c00;color:#fff;border-radius:8px;padding:6px 16px;font-weight:500;border:none;">
+                    <i class="bi bi-building"></i> 供应商管理
+                </button>
+                <button class="btn btn-sm" onclick="purchaseAction('board')" style="background:#0066cc;border-color:#0066cc;color:#fff;border-radius:8px;padding:6px 16px;font-weight:500;border:none;">
+                    <i class="bi bi-grid"></i> 采购板材
+                </button>
+                <button class="btn btn-sm" onclick="purchaseAction('magnet')" style="background:#6f42c1;border-color:#6f42c1;color:#fff;border-radius:8px;padding:6px 16px;font-weight:500;border:none;">
+                    <i class="bi bi-magnet"></i> 采购磁铁
+                </button>
+                <button class="btn btn-sm" onclick="purchaseAction('shell')" style="background:#0f7b4a;border-color:#0f7b4a;color:#fff;border-radius:8px;padding:6px 16px;font-weight:500;border:none;">
+                    <i class="bi bi-box"></i> 采购壳子
+                </button>
+            </div>
+        </div>
+
+        <!-- 订单列表 -->
+        <div id="purchaseListContainer" style="padding:12px 16px; flex: 1 1 auto; overflow-y: auto; position: relative; min-height: 0; display: flex; flex-direction: column;">
+    <div id="purchaseOrderList" style="flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column;"></div>
+</div>
+    </div>
+
+    <!-- 列设置模态框 -->
+    <div class="modal fade" id="purchaseColumnSettingsModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="bi bi-layout-three-columns"></i> 采购管理 - 列设置</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body column-settings-body" id="purchaseColumnSettingsContent">
+                    <!-- 由JS动态渲染 -->
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+                    <button class="btn btn-primary-custom" onclick="resetPurchaseColumns()">恢复默认</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 采购单生成确认模态框 -->
+    <div class="modal fade" id="purchaseConfirmModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header" style="background:#f0f7ff;border-bottom:2px solid #0066cc;">
+                    <h5 class="modal-title"><i class="bi bi-cart-plus" style="color:#0066cc;"></i> 生成采购单</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" style="max-height:70vh;overflow-y:auto;">
+                    <div style="margin-bottom:16px;">
+                        <div style="font-weight:600;font-size:14px;color:#0a2540;margin-bottom:8px;">
+                            📋 将要生成采购单的订单（共 <span id="confirmOrderCount">0</span> 个）
+                        </div>
+                        <div id="confirmOrderList" style="background:#f8fafc;padding:8px 12px;border-radius:8px;border:1px solid #e9edf2;max-height:200px;overflow-y:auto;font-size:13px;">
+                        </div>
+                    </div>
+                    <hr />
+                    <div>
+                        <div style="font-weight:600;font-size:14px;color:#0a2540;margin-bottom:8px;">
+                            🏢 选择供应商
+                        </div>
+                        <div class="row g-3">
+                            <div class="col-md-12">
+                                <label class="form-label">供应商 *</label>
+                                <select class="form-select" id="confirmSupplierSelect" style="font-size:15px;padding:8px 12px;" onchange="onConfirmSupplierChange()">
+                                    <option value="">-- 请选择 --</option>
+                                </select>
+                            </div>
+                            <div class="col-md-12" id="confirmOtherSupplierDiv" style="display:none;">
+                                <label class="form-label">供应商名称</label>
+                                <input type="text" class="form-control" id="confirmOtherSupplierInput" placeholder="请输入供应商名称" />
+                            </div>
+                            <div class="col-md-12">
+                                <label class="form-label">配送地址 <span class="text-muted" style="font-size:12px;font-weight:400;">（联系人、电话、地址）</span></label>
+                                <textarea class="form-control" id="confirmSupplierDelivery" rows="3" placeholder="联系人：XXX&#10;电话：XXX&#10;地址：XXX" style="font-size:14px;line-height:1.6;"></textarea>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button class="btn btn-primary-custom" id="confirmGenerateBtn">
+                        <i class="bi bi-check-lg"></i> 确认生成
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 供应商管理模态框 -->
+    <div class="modal fade" id="supplierManagerModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-md">
+            <div class="modal-content">
+                <div class="modal-header" style="background:#fff3e0;border-bottom:2px solid #ff8c00;">
+                    <h5 class="modal-title"><i class="bi bi-building" style="color:#ff8c00;"></i> 供应商管理</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div style="margin-bottom:12px;display:flex;gap:8px;">
+                        <input type="text" class="form-control" id="newSupplierName" placeholder="供应商名称" style="flex:1;" />
+                        <button class="btn btn-primary-custom" onclick="addSupplier()">
+                            <i class="bi bi-plus-lg"></i> 添加
+                        </button>
+                    </div>
+                    <div id="supplierList" style="max-height:350px;overflow-y:auto;">
+                        <!-- 动态渲染 -->
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 编辑供应商模态框 -->
+    <div class="modal fade" id="editSupplierModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-md">
+            <div class="modal-content">
+                <div class="modal-header" style="background:#fff3e0;border-bottom:2px solid #ff8c00;">
+                    <h5 class="modal-title"><i class="bi bi-pencil" style="color:#ff8c00;"></i> 编辑供应商</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="editSupplierIndex" value="" />
+                    <div class="mb-3">
+                        <label class="form-label">供应商名称 *</label>
+                        <input type="text" class="form-control" id="editSupplierName" placeholder="供应商名称" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">配送地址</label>
+                        <textarea class="form-control" id="editSupplierDelivery" rows="4" placeholder="联系人：XXX&#10;电话：XXX&#10;地址：XXX" style="font-size:14px;line-height:1.6;"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button class="btn btn-primary-custom" id="saveSupplierEditBtn">
+                        <i class="bi bi-check-lg"></i> 保存修改
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 采购管理专用详情模态框 -->
+    <div class="modal fade" id="purchaseDetailModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header" style="background:#f0f7ff;border-bottom:2px solid #0066cc;">
+                    <h5 class="modal-title">
+                        <i class="bi bi-cart" style="color:#0066cc;"></i> 采购详情
+                        <span style="font-size:13px;font-weight:400;color:#6c7a8a;margin-left:12px;" id="purchaseDetailOrderRef">关联订单: -</span>
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="purchaseDetailForm">
+                        <input type="hidden" id="purchaseDetailOrderId" />
+
+                        <!-- 关联订单信息 -->
+                        <div style="background:#e8f0fe;padding:12px 16px;border-radius:8px;border-left:4px solid #0066cc;margin-bottom:12px;">
+                            <div style="font-weight:600;font-size:13px;color:#0066cc;margin-bottom:6px;">
+                                <i class="bi bi-link-45deg"></i> 关联订单信息
+                            </div>
+                            <div class="row g-2">
+                                <div class="col-md-3">
+                                    <span style="font-size:11px;color:#6c7a8a;">订单号</span>
+                                    <div style="font-weight:600;font-size:15px;color:#0a2540;" id="purchaseDetailOrderNo">-</div>
+                                </div>
+                                <div class="col-md-3">
+                                    <span style="font-size:11px;color:#6c7a8a;">订单状态</span>
+                                    <div style="font-weight:600;font-size:15px;" id="purchaseDetailOrderStatus">-</div>
+                                </div>
+                                <div class="col-md-3">
+                                    <span style="font-size:11px;color:#6c7a8a;">订单数量</span>
+                                    <div style="font-weight:600;font-size:15px;color:#0066cc;" id="purchaseDetailOrderQty">-</div>
+                                </div>
+                                <div class="col-md-3">
+                                    <span style="font-size:11px;color:#6c7a8a;">交货日期</span>
+                                    <div style="font-weight:600;font-size:15px;" id="purchaseDetailDeliveryDate">-</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 产品信息 -->
+                        <div style="background:#f8fafc;padding:12px 16px;border-radius:8px;border-left:4px solid #6f42c1;margin-bottom:12px;">
+                            <div style="font-weight:600;font-size:13px;color:#6f42c1;margin-bottom:6px;">
+                                <i class="bi bi-box"></i> 产品信息（来自关联产品库）
+                            </div>
+                            <div class="row g-2">
+                                <div class="col-md-3">
+                                    <span style="font-size:11px;color:#6c7a8a;">产品编号</span>
+                                    <div style="font-weight:600;font-size:14px;word-break:break-word;overflow-wrap:break-word;" id="purchaseDetailProductCode">-</div>
+                                </div>
+                                <div class="col-md-4">
+                                    <span style="font-size:11px;color:#6c7a8a;">产品名称</span>
+                                    <div style="font-weight:600;font-size:14px;word-break:break-word;overflow-wrap:break-word;max-width:100%;" id="purchaseDetailProductName">-</div>
+                                </div>
+                                <div class="col-md-2">
+                                    <span style="font-size:11px;color:#6c7a8a;">规格型号</span>
+                                    <div style="font-weight:600;font-size:14px;word-break:break-word;overflow-wrap:break-word;" id="purchaseDetailSpec">-</div>
+                                </div>
+                                <div class="col-md-2">
+                                    <span style="font-size:11px;color:#6c7a8a;">颜色</span>
+                                    <div style="font-weight:600;font-size:14px;word-break:break-word;overflow-wrap:break-word;" id="purchaseDetailColor">-</div>
+                                </div>
+                                <div class="col-md-1">
+                                    <span style="font-size:11px;color:#6c7a8a;">客户号</span>
+                                    <div style="font-weight:600;font-size:14px;word-break:break-word;overflow-wrap:break-word;" id="purchaseDetailCustomerCode">-</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 磁铁用量 -->
+                        <div style="background:#f0f7ff;padding:12px 16px;border-radius:8px;border:2px solid #6f42c1;margin-bottom:12px;" id="magnetSection">
+                            <div style="font-weight:600;font-size:14px;color:#6f42c1;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;">
+                                <span><i class="bi bi-magnet"></i> 磁铁用量（整单）</span>
+                                <span style="font-size:13px;font-weight:400;color:#6c7a8a;" id="purchaseDetailMagnetInfo">-</span>
+                            </div>
+                            <div id="purchaseDetailMagnetTable" style="display:none;">
+                                <table class="table table-sm table-bordered" style="font-size:12px;margin-bottom:0;">
+                                    <thead style="background:#e8d5f5;">
+                                        <tr>
+                                            <th style="text-align:center;width:18%;">磁性</th>
+                                            <th style="text-align:center;width:28%;">尺寸规格</th>
+                                            <th style="text-align:center;width:16%;">每件用量</th>
+                                            <th style="text-align:center;width:18%;">整单用量</th>
+                                            <th style="text-align:center;width:20%;">备注</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="purchaseDetailMagnetBody"></tbody>
+                                </table>
+                            </div>
+                            <div id="purchaseDetailMagnetEmpty" style="display:block;color:#999;font-size:13px;text-align:center;padding:8px 0;">
+                                暂无磁铁数据
+                            </div>
+                        </div>
+
+                        <!-- 板材 & 壳子 -->
+                        <div style="background:#f5f8fa;padding:12px 16px;border-radius:8px;border:1px solid #e9edf2;margin-bottom:12px;">
+                            <div style="font-weight:600;font-size:13px;color:#0a2540;margin-bottom:6px;">
+                                <i class="bi bi-box-seam"></i> 板材 &amp; 壳子
+                            </div>
+                            <div class="row g-2">
+                                <div class="col-md-6">
+                                    <span style="font-size:11px;color:#6c7a8a;">板材</span>
+                                    <div style="font-weight:600;font-size:14px;" id="purchaseDetailMaterialBoard">-</div>
+                                </div>
+                                <div class="col-md-6">
+                                    <span style="font-size:11px;color:#6c7a8a;">壳子</span>
+                                    <div style="font-weight:600;font-size:14px;" id="purchaseDetailMaterialShell">-</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 采购记录 -->
+                        <div style="margin-top:12px;border-top:1px solid #e9edf2;padding-top:12px;">
+                            <div style="font-weight:600;font-size:14px;color:#0a2540;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;">
+                                <span><i class="bi bi-clipboard-data"></i> 采购记录</span>
+                                <span style="font-size:12px;color:#6c7a8a;font-weight:400;" id="purchaseRecordCount">0 条</span>
+                            </div>
+                            <div id="purchaseDetailRecords" style="background:#f8fafc;padding:8px 12px;border-radius:8px;border:1px solid #e9edf2;overflow-x:auto;position:relative;">
+                                <!-- 由JS动态渲染 -->
+                            </div>
+                        </div>
+
+                        <!-- 采购备注 -->
+                        <div class="row g-3" style="margin-top:8px;">
+                            <div class="col-md-12">
+                                <label class="form-label"><i class="bi bi-file-text"></i> 采购备注</label>
+                                <textarea class="form-control" id="purchaseDetailRemark" rows="2" placeholder="采购备注信息..."></textarea>
+                            </div>
+                        </div>
+
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+                    <button class="btn btn-primary-custom" onclick="savePurchaseDetail()">
+                        <i class="bi bi-save"></i> 保存采购信息
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+#page-purchase .table-wrap {
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid #e9edf2;
+    background: #fff;
+}
+#page-purchase .table-header {
+    background: #fff;
+}
+#page-purchase .purchase-checkbox {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+    accent-color: #0066cc;
+}
+#page-purchase .purchase-checkbox:hover {
+    transform: scale(1.1);
+}
+#page-purchase .table-wrap table td {
+    vertical-align: middle;
+}
+#page-purchase .table-wrap table th {
+    font-weight: 600;
+    color: #3d4e62;
+}
+
+#page-purchase .supplier-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    border-bottom: 1px solid #f0f2f5;
+}
+#page-purchase .supplier-item:hover {
+    background: #f8fafc;
+}
+#page-purchase .supplier-item .supplier-info {
+    flex: 1;
+    min-width: 0;
+}
+#page-purchase .supplier-item .supplier-name {
+    font-weight: 600;
+    font-size: 14px;
+}
+#page-purchase .supplier-item .supplier-detail {
+    font-size: 12px;
+    color: #6c7a8a;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 200px;
+}
+#page-purchase .supplier-item .supplier-actions {
+    display: flex;
+    gap: 4px;
+    flex-shrink: 0;
+}
+
+/* 采购记录表格粘性列样式 */
+#purchaseDetailRecords .purchase-record-table-wrap {
+    overflow-x: auto;
+    position: relative;
+}
+#purchaseDetailRecords .purchase-record-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    font-size: 12px;
+    min-width: 600px;
+}
+#purchaseDetailRecords .purchase-record-table th,
+#purchaseDetailRecords .purchase-record-table td {
+    padding: 6px 10px;
+    border-bottom: 1px solid #f0f2f5;
+    text-align: center;
+    white-space: nowrap;
+    background: #fff;
+}
+#purchaseDetailRecords .purchase-record-table th {
+    background: #f0f4f8;
+    font-weight: 600;
+    color: #3d4e62;
+    border-bottom: 2px solid #e9edf2;
+}
+#purchaseDetailRecords .purchase-record-table .col-po-number {
+    position: sticky;
+    left: 0;
+    z-index: 10;
+    background: #fff;
+    border-right: 2px solid #e9edf2;
+    min-width: 140px;
+}
+#purchaseDetailRecords .purchase-record-table thead .col-po-number {
+    background: #f0f4f8;
+    z-index: 11;
+}
+#purchaseDetailRecords .purchase-record-table .col-date {
+    position: sticky;
+    left: 140px;
+    z-index: 10;
+    background: #fff;
+    border-right: 2px solid #e9edf2;
+    min-width: 100px;
+}
+#purchaseDetailRecords .purchase-record-table thead .col-date {
+    background: #f0f4f8;
+    z-index: 11;
+}
+#purchaseDetailRecords .purchase-record-table .col-type,
+#purchaseDetailRecords .purchase-record-table .col-supplier,
+#purchaseDetailRecords .purchase-record-table .col-total,
+#purchaseDetailRecords .purchase-record-table .col-action {
+    min-width: 80px;
+}
+
+/* 高亮行由JS内联样式控制 */
+.purchase-row-highlight td {
+    background-color: #fff3cd;
+}
+.purchase-row-highlight td:first-child {
+    background-color: #fff3cd;
+}
+
+/* 列宽拖拽手柄 */
+.col-resize-handle {
+    position: absolute;
+    right: -4px;
+    top: 0;
+    bottom: 0;
+    width: 8px;
+    cursor: col-resize;
+    z-index: 20;
+    user-select: none;
+    background: transparent;
+    transition: background 0.15s;
+}
+.col-resize-handle:hover,
+.col-resize-handle.active {
+    background: rgba(0, 102, 204, 0.25);
+}
+.col-resize-handle.dragging {
+    background: rgba(0, 102, 204, 0.4);
+}
+.col-resize-ghost {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: #0066cc;
+    z-index: 9999;
+    pointer-events: none;
+    display: none;
+}
+.col-resize-ghost.visible {
+    display: block;
+}
+body.resizing {
+    user-select: none !important;
+    cursor: col-resize !important;
+}
+#purchaseOrderList table {
+    table-layout: fixed;
+}
+
+/* 下拉菜单圆点样式 */
+#page-purchase .dropdown-menu {
+    border-radius: 12px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+}
+#page-purchase .dropdown-menu .dropdown-item:hover {
+    background: #f0f2f5;
+}
+
+/* 搜索框样式 */
+#purchaseSearchInput:focus {
+    border-color: #0066cc;
+    box-shadow: 0 0 0 3px rgba(0,102,204,0.1);
+    background: #fff;
+}
+</style>

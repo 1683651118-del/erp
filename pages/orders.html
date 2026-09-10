@@ -1,0 +1,484 @@
+<div id="page-orders">
+    <div class="table-wrap">
+        <!-- ===== 表头：筛选栏 + 操作按钮 ===== -->
+        <div class="table-header">
+            <div class="filter-group">
+                <input type="text" class="form-control form-control-sm" placeholder="🔍 搜索订单号/产品名称/客户号..." id="filterKeyword" oninput="renderOrders()" style="min-width:250px;" />
+                <button class="btn btn-sm btn-outline-custom" onclick="resetFilters()"><i class="bi bi-arrow-counterclockwise"></i> 重置</button>
+            </div>
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+                <!-- 底色按钮 -->
+                <div class="btn-group">
+                    <button class="btn btn-sm dropdown-toggle" data-bs-toggle="dropdown" style="background:#ffc107;border-color:#ffc107;color:#0a2540;border-radius:8px 0 0 8px;padding:4px 10px;font-weight:500;border:none;font-size:13px;" title="添加底色">
+                        <i class="bi bi-paint-bucket"></i>
+                    </button>
+                    <ul class="dropdown-menu" style="padding:8px;min-width:auto;border-radius:12px;box-shadow:0 4px 16px rgba(0,0,0,0.12);">
+                        <li style="display:flex;gap:6px;padding:4px;flex-wrap:wrap;">
+                            <span style="display:inline-block;width:28px;height:28px;border-radius:50%;background:#fff3cd;cursor:pointer;border:2px solid #ddd;transition:all 0.15s;" onclick="applyOrderHighlight('#fff3cd')" title="黄色"></span>
+                            <span style="display:inline-block;width:28px;height:28px;border-radius:50%;background:#d4edda;cursor:pointer;border:2px solid #ddd;transition:all 0.15s;" onclick="applyOrderHighlight('#d4edda')" title="绿色"></span>
+                            <span style="display:inline-block;width:28px;height:28px;border-radius:50%;background:#f8d7da;cursor:pointer;border:2px solid #ddd;transition:all 0.15s;" onclick="applyOrderHighlight('#f8d7da')" title="红色"></span>
+                            <span style="display:inline-block;width:28px;height:28px;border-radius:50%;background:#cce5ff;cursor:pointer;border:2px solid #ddd;transition:all 0.15s;" onclick="applyOrderHighlight('#cce5ff')" title="蓝色"></span>
+                            <span style="display:inline-block;width:28px;height:28px;border-radius:50%;background:#e2d9f3;cursor:pointer;border:2px solid #ddd;transition:all 0.15s;" onclick="applyOrderHighlight('#e2d9f3')" title="紫色"></span>
+                            <span style="display:inline-block;width:28px;height:28px;border-radius:50%;background:#fce4d6;cursor:pointer;border:2px solid #ddd;transition:all 0.15s;" onclick="applyOrderHighlight('#fce4d6')" title="橙色"></span>
+                            <span style="display:inline-block;width:28px;height:28px;border-radius:50%;background:#d5e8d0;cursor:pointer;border:2px solid #ddd;transition:all 0.15s;" onclick="applyOrderHighlight('#d5e8d0')" title="薄荷"></span>
+                            <span style="font-size:12px;color:#6c7a8a;background:#f0f2f5;padding:2px 12px;border-radius:12px;" id="selectedOrderCount">已选 0 个</span>
+                        </li>
+                        <li><hr class="dropdown-divider" style="margin:4px 0;"></li>
+                        <li><a class="dropdown-item" href="#" onclick="clearOrderHighlight()" style="font-size:13px;border-radius:6px;"><i class="bi bi-eraser"></i> 清除底色</a></li>
+                    </ul>
+                </div>
+
+                <!-- 全选 -->
+                <button class="btn btn-sm btn-outline-custom" onclick="toggleAllOrdersRows()" style="border-radius:8px;padding:4px 14px;font-size:13px;">
+                    <i class="bi bi-check-all"></i> 全选
+                </button>
+
+                <!-- 导出选中 -->
+                <button class="btn btn-sm" onclick="exportSelectedOrders()" style="background:#0d6efd;border-color:#0d6efd;color:#fff;border-radius:8px;padding:4px 14px;font-weight:500;border:none;font-size:13px;">
+                    <i class="bi bi-file-earmark-excel"></i> 导出选中
+                </button>
+
+                <!-- 列设置 -->
+                <button class="btn btn-sm btn-outline-custom btn-add-column" onclick="openOrderColumnSettings()" title="列设置" style="padding:4px 10px;">
+                    <i class="bi bi-layout-three-columns"></i>
+                </button>
+
+                <!-- 月份导出 -->
+                <div class="month-export-group">
+                    <input type="month" class="form-control form-control-sm month-picker" id="exportMonthPicker" placeholder="选择月份" style="width:130px;min-width:130px;" />
+                </div>
+
+                <!-- 批量推送到生产 -->
+                <button class="btn btn-sm btn-success" onclick="batchPushToProduction()" style="border-radius:8px;padding:4px 14px;font-weight:500;border:none;font-size:13px;background:#28a745;color:#fff;">
+                    <i class="bi bi-gear"></i> 推送到生产
+                </button>
+
+                <!-- 批量推送到外发 -->
+                <button class="btn btn-sm btn-warning" onclick="batchPushToOutsource()" style="border-radius:8px;padding:4px 14px;font-weight:500;border:none;font-size:13px;background:#ff8c00;color:#fff;">
+                    <i class="bi bi-send"></i> 推送到外发
+                </button>
+
+                <!-- 导出全部 -->
+                <button class="btn btn-sm btn-outline-custom btn-excel-export" onclick="exportOrdersToExcel()" style="padding:4px 14px;">
+                    <i class="bi bi-file-earmark-excel"></i> 导出全部
+                </button>
+
+                <!-- 批量设置 -->
+                <button class="btn btn-sm btn-outline-custom" onclick="openBatchSettings()" style="border-radius:8px;padding:4px 14px;font-size:13px;border-color:#6f42c1;color:#6f42c1;">
+                    <i class="bi bi-sliders2"></i> 批量设置
+                </button>
+            </div>
+        </div>
+
+        <!-- ===== 表格主体 ===== -->
+        <div class="table-responsive" id="ordersTableWrapper" style="flex:1 1 auto;min-height:0;overflow-y:auto;position:relative;height:calc(100vh - 220px);border:1px solid #e9edf2;border-radius:8px;padding:0;background:#fff;">
+            <table class="table" id="ordersTable" style="margin-bottom:0;width:100%;table-layout:fixed;border-collapse:collapse;">
+                <thead id="ordersThead" style="position:sticky;top:0;z-index:30;background:#fafbfc;"></thead>
+                <tbody id="ordersBody"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<style>
+#page-orders {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    width: 100%;
+    max-width: 100%;
+    height: 100%;
+    min-height: 700px;
+    background: #fff;
+}
+#page-orders .table-wrap {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    height: 100%;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid #e9edf2;
+    background: #fff;
+}
+#page-orders .table-wrap .table-header {
+    flex-shrink: 0;
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+    border-bottom: 1px solid #f0f2f5;
+    background: #fff;
+}
+#page-orders .table-wrap .table-header .filter-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+#page-orders .table-wrap .table-header .filter-group .form-control,
+#page-orders .table-wrap .table-header .filter-group .form-select {
+    width: auto;
+    min-width: 140px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 13px;
+}
+#page-orders .table-wrap .table-responsive {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: auto;
+    padding: 0 4px 4px 4px;
+    position: relative;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    height: 100%;
+}
+#page-orders .table-wrap table {
+    margin-bottom: 0;
+    font-size: 13px;
+    min-width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    table-layout: fixed;
+}
+#page-orders .table-wrap table th {
+    background: #fafbfc;
+    font-weight: 600;
+    color: #3d4e62;
+    border-bottom: 2px solid #e9edf2;
+    padding: 10px 12px;
+    white-space: nowrap;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    min-width: 60px;
+}
+#page-orders .table-wrap table td {
+    padding: 10px 12px;
+    vertical-align: middle;
+    border-bottom: 1px solid #f0f2f5;
+    max-width: 180px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+#page-orders .table-wrap table .sticky-col {
+    position: sticky !important;
+    right: 0 !important;
+    background: #fff;
+    z-index: 5 !important;
+    box-shadow: -2px 0 6px rgba(0,0,0,0.06) !important;
+}
+#page-orders .table-wrap table thead th.sticky-col {
+    background: #fafbfc !important;
+    z-index: 15 !important;
+}
+#page-orders .table-wrap table tr:hover td.sticky-col {
+    background: #f8faff !important;
+}
+#page-orders .table-wrap table td.sticky-col-remark,
+#page-orders .table-wrap table th.sticky-col-remark {
+    min-width: 100px;
+    max-width: 180px;
+}
+#page-orders .table-wrap table td.sticky-col-actions,
+#page-orders .table-wrap table th.sticky-col-actions {
+    min-width: 120px;
+    max-width: 160px;
+    width: 160px;
+}
+.filter-row select {
+    width: 100%;
+    border: none;
+    border-bottom: 1px solid #d0d8e0;
+    background: transparent;
+    padding: 4px 2px;
+    font-size: 12px;
+    outline: none;
+    transition: border-color 0.2s;
+    appearance: auto;
+    -webkit-appearance: auto;
+    background-color: #fafbfc;
+}
+.filter-row select:focus {
+    border-bottom-color: var(--primary-blue);
+}
+.filter-row th {
+    padding: 4px 12px 8px 12px;
+    background: #f8fafc;
+    border-bottom: 1px solid #e9edf2;
+}
+.resize-handle {
+    position: absolute;
+    right: -4px;
+    top: 0;
+    bottom: 0;
+    width: 8px;
+    cursor: col-resize;
+    z-index: 20;
+    user-select: none;
+}
+.resize-handle:hover {
+    background: rgba(0,102,204,0.2);
+}
+#page-orders .table-wrap table th {
+    position: relative;
+}
+#page-orders .table-wrap table td.editable-custom {
+    cursor: text;
+    background-color: #fcfcfc;
+}
+#page-orders .table-wrap table td.editable-custom:hover {
+    background-color: #fff9e6;
+}
+.wrap-cell {
+    white-space: normal !important;
+    word-wrap: break-word;
+    word-break: break-word;
+    max-width: 220px;
+    min-width: 100px;
+    line-height: 1.5;
+    padding: 8px 12px !important;
+}
+.wrap-cell.product-name {
+    max-width: 260px;
+    min-width: 140px;
+}
+.wrap-cell.spec-cell {
+    max-width: 220px;
+    min-width: 120px;
+}
+#ordersTable th,
+#ordersTable td {
+    font-size: 13px;
+}
+#ordersTable th[data-col="status"],
+#ordersTable td:first-child {
+    min-width: 60px;
+    max-width: 80px;
+}
+#ordersTable th[data-col="orderNo"],
+#ordersTable td:nth-child(3) {
+    min-width: 100px;
+    max-width: 150px;
+}
+#ordersTable th[data-col="qty"],
+#ordersTable td:nth-child(9) {
+    min-width: 60px;
+    max-width: 80px;
+    text-align: center;
+}
+.col-resize-handle {
+    position: absolute;
+    right: -4px;
+    top: 0;
+    bottom: 0;
+    width: 8px;
+    cursor: col-resize;
+    z-index: 20;
+    user-select: none;
+    background: transparent;
+    transition: background 0.15s;
+}
+.col-resize-handle:hover,
+.col-resize-handle.active {
+    background: rgba(0, 102, 204, 0.25);
+}
+.col-resize-handle.dragging {
+    background: rgba(0, 102, 204, 0.4);
+}
+.col-resize-ghost {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: #0066cc;
+    z-index: 9999;
+    pointer-events: none;
+    display: none;
+}
+.col-resize-ghost.visible {
+    display: block;
+}
+body.resizing {
+    user-select: none !important;
+    cursor: col-resize !important;
+}
+#ordersTable th,
+#ordersTable td {
+    min-width: 40px;
+}
+#ordersTable th .col-resize-handle ~ * {
+    padding-right: 6px;
+}
+#ordersTable th,
+#ordersTable td {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 200px;
+}
+#ordersTable th.wrap-cell,
+#ordersTable td.wrap-cell {
+    white-space: normal;
+    word-break: break-word;
+    max-width: 300px;
+}
+#ordersTable {
+    table-layout: fixed;
+    width: 100%;
+    border-collapse: collapse;
+}
+#page-orders .table-wrap table thead th.sticky-col-actions {
+    position: sticky !important;
+    right: 0 !important;
+    z-index: 20 !important;
+    background: #fafbfc !important;
+    box-shadow: -2px 0 8px rgba(0,0,0,0.08) !important;
+}
+#page-orders .table-wrap table tbody td.sticky-col-actions {
+    position: sticky !important;
+    right: 0 !important;
+    z-index: 5 !important;
+    background: #fff !important;
+    box-shadow: -2px 0 6px rgba(0,0,0,0.06) !important;
+    min-width: 120px !important;
+}
+#page-orders .table-wrap table td.sticky-col-actions,
+#page-orders .table-wrap table th.sticky-col-actions {
+    overflow: visible !important;
+    text-overflow: clip !important;
+    white-space: nowrap !important;
+    min-width: 160px !important;
+    width: 160px !important;
+    max-width: none !important;
+}
+#page-orders .table-wrap table td.sticky-col-actions .btn {
+    margin-right: 4px;
+    font-size: 13px;
+    padding: 4px 10px;
+}
+.month-export-group {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+.month-export-group .form-control {
+    width: 160px;
+    min-width: 130px;
+    font-size: 13px;
+    padding: 4px 8px;
+}
+.btn-sm {
+    font-size: 13px;
+    padding: 5px 14px;
+}
+.btn-primary-custom {
+    background: #0066cc;
+    border: none;
+    border-radius: 10px;
+    padding: 8px 20px;
+    font-weight: 500;
+    color: #fff;
+    transition: all 0.15s;
+}
+.btn-primary-custom:hover {
+    background: #0052a3;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(0,102,204,0.25);
+    color: #fff;
+}
+.btn-outline-custom {
+    border: 1px solid #d0d8e0;
+    border-radius: 10px;
+    padding: 8px 18px;
+    font-weight: 500;
+    color: #3d4e62;
+    background: #fff;
+    transition: all 0.15s;
+}
+.btn-outline-custom:hover {
+    background: #f0f4fa;
+    border-color: #b0c0d0;
+}
+.btn-add-column {
+    border-color: #28a745;
+    color: #28a745;
+}
+.btn-add-column:hover {
+    background: #e8f5e9;
+    border-color: #28a745;
+}
+.btn-excel-export {
+    border-color: #0d6efd;
+    color: #0d6efd;
+}
+.btn-excel-export:hover {
+    background: #e6f0ff;
+    border-color: #0d6efd;
+}
+.badge-status {
+    font-weight: 500;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    white-space: nowrap;
+}
+.badge-status.bg-soft-primary {
+    background: #e6f0ff;
+    color: #0047ab;
+}
+.badge-status.bg-soft-warning {
+    background: #fef3e0;
+    color: #a86800;
+}
+.badge-status.bg-soft-success {
+    background: #e3f5ec;
+    color: #0f7b4a;
+}
+.badge-status.bg-soft-danger {
+    background: #fde8e8;
+    color: #b31b1b;
+}
+.badge-status.bg-soft-secondary {
+    background: #eef1f4;
+    color: #4a5a6e;
+}
+.badge-status.bg-soft-info {
+    background: #d6ecff;
+    color: #005fa3;
+}
+.badge-status.bg-soft-purple {
+    background: #ede7ff;
+    color: #6b3fa0;
+}
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+::-webkit-scrollbar-track {
+    background: #f0f2f5;
+}
+::-webkit-scrollbar-thumb {
+    background: #c0c8d4;
+    border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: #a0aab8;
+}
+#selectedOrderCount {
+    font-size: 12px;
+    color: #6c7a8a;
+    background: #f0f2f5;
+    padding: 2px 12px;
+    border-radius: 12px;
+}
+</style>

@@ -1,0 +1,416 @@
+<div id="page-shipment">
+    <div class="table-wrap">
+        <div class="table-header">
+            <div class="filter-group">
+                <input type="text" class="form-control form-control-sm" placeholder="🔍 订单号" id="shipFilterOrderNo" oninput="renderShipment()" />
+                <input type="text" class="form-control form-control-sm" placeholder="产品名称" id="shipFilterProduct" oninput="renderShipment()" />
+                <select class="form-select form-select-sm" id="shipFilterStatus" onchange="renderShipment()">
+                    <option value="">全部状态</option>
+                    <option value="待出货">待出货</option>
+                    <option value="已完成-待送货">已完成-待送货</option>
+                    <option value="已送货完成">已送货完成</option>
+                    <option value="已完成">已完成</option>
+                </select>
+                <select class="form-select form-select-sm" id="shipFilterQualityStatus" onchange="renderShipment()">
+                    <option value="">全部质检状态</option>
+                    <option value="质检完成-已送货">质检完成-已送货</option>
+                    <option value="质检未通过-返单">质检未通过-返单</option>
+                    <option value="已送货完成">已送货完成</option>
+                </select>
+                <button class="btn btn-sm btn-outline-custom" onclick="resetShipFilters()"><i class="bi bi-arrow-counterclockwise"></i> 重置</button>
+            </div>
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+                <button class="btn btn-sm btn-outline-custom btn-print" onclick="printShipments('delivery')" style="border-color:#0d6efd;color:#0d6efd;">
+                    <i class="bi bi-printer"></i> 打印发货单
+                </button>
+                <button class="btn btn-sm btn-outline-custom btn-print" onclick="printShipments('label')" style="border-color:#198754;color:#198754;">
+                    <i class="bi bi-tag"></i> 打印标签
+                </button>
+                <button class="btn btn-sm btn-outline-custom btn-add-column" onclick="openShipColumnSettings()"><i class="bi bi-layout-three-columns"></i> 列设置</button>
+                <button class="btn btn-sm btn-outline-custom" onclick="resetShipColumns()"><i class="bi bi-arrow-counterclockwise"></i> 恢复列</button>
+                <button class="btn btn-sm btn-outline-custom" onclick="exportShipmentsToExcel()" style="border-color:#0d6efd;color:#0d6efd;">
+                    <i class="bi bi-file-earmark-excel"></i> 导出
+                </button>
+            </div>
+        </div>
+        <div class="table-responsive" id="shipTableWrapper">
+            <table class="table" id="shipTable">
+                <thead id="shipThead"></thead>
+                <tbody id="shipBody"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- ★★★ 注意：printPreviewModal 和 boxQtyModal 定义在 index.html 中，此处不再重复 ★★★ -->
+<!-- 但 boxQtyModal 如果 index.html 没有，需要保留 -->
+<div class="modal fade" id="boxQtyModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-box-seam"></i> 输入每箱数量</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">本次送货总数量</label>
+                    <div id="boxQtyTotal" style="font-size:20px;font-weight:700;color:#0066cc;"></div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">每箱装 <span style="color:#dc3545;">*</span></label>
+                    <input type="number" class="form-control" id="boxQtyInput" min="1" step="1" placeholder="请输入每箱数量" />
+                    <div class="form-text">系统将自动计算需要打印的标签张数</div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">预计打印标签数</label>
+                    <div id="boxQtyResult" style="font-size:18px;font-weight:700;color:#0a2540;">0 张</div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button class="btn btn-primary-custom" id="confirmBoxQtyBtn">生成标签</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+#page-shipment {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    width: 100%;
+    max-width: 100%;
+    height: 100%;
+    min-height: 700px;
+    background: #fff;
+}
+#page-shipment .table-wrap {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    height: 100%;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid #e9edf2;
+    background: #fff;
+}
+#page-shipment .table-wrap .table-header {
+    flex-shrink: 0;
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+    border-bottom: 1px solid #f0f2f5;
+    background: #fff;
+}
+#page-shipment .table-wrap .table-header .filter-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+#page-shipment .table-wrap .table-header .filter-group .form-control,
+#page-shipment .table-wrap .table-header .filter-group .form-select {
+    width: auto;
+    min-width: 120px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 13px;
+}
+#page-shipment .table-wrap .table-responsive {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: auto;
+    padding: 0 4px 4px 4px;
+    position: relative;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    height: 100%;
+}
+#page-shipment .table-wrap table {
+    margin-bottom: 0;
+    font-size: 13px;
+    min-width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    table-layout: fixed;
+}
+#page-shipment .table-wrap table th {
+    background: #fafbfc;
+    font-weight: 600;
+    color: #3d4e62;
+    border-bottom: 2px solid #e9edf2;
+    padding: 10px 12px;
+    white-space: nowrap;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    min-width: 60px;
+}
+#page-shipment .table-wrap table td {
+    padding: 10px 12px;
+    vertical-align: middle;
+    border-bottom: 1px solid #f0f2f5;
+    max-width: 180px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+#page-shipment .table-wrap table .sticky-col {
+    position: sticky !important;
+    background: #fff;
+    z-index: 5 !important;
+    box-shadow: -2px 0 6px rgba(0,0,0,0.06) !important;
+}
+#page-shipment .table-wrap table thead th.sticky-col {
+    background: #fafbfc !important;
+    z-index: 15 !important;
+}
+#page-shipment .table-wrap table tr:hover td.sticky-col {
+    background: #f8faff !important;
+}
+#page-shipment .table-wrap table td.sticky-col-remark,
+#page-shipment .table-wrap table th.sticky-col-remark {
+    min-width: 100px;
+    max-width: 180px;
+}
+#page-shipment .table-wrap table td.sticky-col-actions,
+#page-shipment .table-wrap table th.sticky-col-actions {
+    min-width: 120px;
+    max-width: 160px;
+    width: 160px;
+}
+.filter-row select {
+    width: 100%;
+    border: none;
+    border-bottom: 1px solid #d0d8e0;
+    background: transparent;
+    padding: 4px 2px;
+    font-size: 12px;
+    outline: none;
+    background-color: #fafbfc;
+}
+.filter-row select:focus {
+    border-bottom-color: var(--primary-blue);
+}
+.filter-row th {
+    padding: 4px 12px 8px 12px;
+    background: #f8fafc;
+    border-bottom: 1px solid #e9edf2;
+}
+.wrap-cell {
+    white-space: normal !important;
+    word-wrap: break-word;
+    word-break: break-word;
+    max-width: 220px;
+    min-width: 100px;
+    line-height: 1.5;
+    padding: 8px 12px !important;
+}
+.wrap-cell.product-name {
+    max-width: 260px;
+    min-width: 140px;
+}
+.wrap-cell.spec-cell {
+    max-width: 220px;
+    min-width: 120px;
+}
+#shipTable th,
+#shipTable td {
+    font-size: 13px;
+}
+.badge-status {
+    font-weight: 500;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    white-space: nowrap;
+}
+.badge-status.bg-soft-primary {
+    background: #e6f0ff;
+    color: #0047ab;
+}
+.badge-status.bg-soft-warning {
+    background: #fef3e0;
+    color: #a86800;
+}
+.badge-status.bg-soft-success {
+    background: #e3f5ec;
+    color: #0f7b4a;
+}
+.badge-status.bg-soft-danger {
+    background: #fde8e8;
+    color: #b31b1b;
+}
+.badge-status.bg-soft-secondary {
+    background: #eef1f4;
+    color: #4a5a6e;
+}
+.badge-status.bg-soft-info {
+    background: #d6ecff;
+    color: #005fa3;
+}
+.badge-status.bg-soft-purple {
+    background: #ede7ff;
+    color: #6b3fa0;
+}
+.col-resize-handle {
+    position: absolute;
+    right: -4px;
+    top: 0;
+    bottom: 0;
+    width: 8px;
+    cursor: col-resize;
+    z-index: 20;
+    user-select: none;
+    background: transparent;
+    transition: background 0.15s;
+}
+.col-resize-handle:hover,
+.col-resize-handle.active {
+    background: rgba(0, 102, 204, 0.25);
+}
+.col-resize-handle.dragging {
+    background: rgba(0, 102, 204, 0.4);
+}
+.col-resize-ghost {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: #0066cc;
+    z-index: 9999;
+    pointer-events: none;
+    display: none;
+}
+.col-resize-ghost.visible {
+    display: block;
+}
+body.resizing {
+    user-select: none !important;
+    cursor: col-resize !important;
+}
+#shipTable th,
+#shipTable td {
+    min-width: 40px;
+}
+#shipTable th .col-resize-handle ~ * {
+    padding-right: 6px;
+}
+#shipTable th,
+#shipTable td {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 200px;
+}
+#shipTable th.wrap-cell,
+#shipTable td.wrap-cell {
+    white-space: normal;
+    word-break: break-word;
+    max-width: 300px;
+}
+#shipTable {
+    table-layout: fixed;
+    width: 100%;
+    border-collapse: collapse;
+}
+#page-shipment .table-wrap table thead th.sticky-col-actions {
+    position: sticky !important;
+    right: 0 !important;
+    z-index: 20 !important;
+    background: #fafbfc !important;
+    box-shadow: -2px 0 8px rgba(0,0,0,0.08) !important;
+}
+#page-shipment .table-wrap table tbody td.sticky-col-actions {
+    position: sticky !important;
+    right: 0 !important;
+    z-index: 5 !important;
+    background: #fff !important;
+    box-shadow: -2px 0 6px rgba(0,0,0,0.06) !important;
+    min-width: 120px !important;
+}
+#page-shipment .table-wrap table td.sticky-col-actions,
+#page-shipment .table-wrap table th.sticky-col-actions {
+    overflow: visible !important;
+    text-overflow: clip !important;
+    white-space: nowrap !important;
+    min-width: 160px !important;
+    width: 160px !important;
+    max-width: none !important;
+}
+#page-shipment .table-wrap table td.sticky-col-actions .btn {
+    margin-right: 4px;
+    font-size: 13px;
+    padding: 4px 10px;
+}
+.btn-sm {
+    font-size: 13px;
+    padding: 5px 14px;
+}
+.btn-primary-custom {
+    background: #0066cc;
+    border: none;
+    border-radius: 10px;
+    padding: 8px 20px;
+    font-weight: 500;
+    color: #fff;
+    transition: all 0.15s;
+}
+.btn-primary-custom:hover {
+    background: #0052a3;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(0,102,204,0.25);
+    color: #fff;
+}
+.btn-outline-custom {
+    border: 1px solid #d0d8e0;
+    border-radius: 10px;
+    padding: 8px 18px;
+    font-weight: 500;
+    color: #3d4e62;
+    background: #fff;
+    transition: all 0.15s;
+}
+.btn-outline-custom:hover {
+    background: #f0f4fa;
+    border-color: #b0c0d0;
+}
+.btn-add-column {
+    border-color: #28a745;
+    color: #28a745;
+}
+.btn-add-column:hover {
+    background: #e8f5e9;
+    border-color: #28a745;
+}
+.btn-print {
+    border-color: #0d6efd;
+    color: #0d6efd;
+}
+.btn-print:hover {
+    background: #e6f0ff;
+    border-color: #0d6efd;
+}
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+::-webkit-scrollbar-track {
+    background: #f0f2f5;
+}
+::-webkit-scrollbar-thumb {
+    background: #c0c8d4;
+    border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: #a0aab8;
+}
+</style>

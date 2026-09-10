@@ -1,0 +1,358 @@
+<div id="page-purchaseDetail">
+    <div class="table-wrap">
+        <!-- 顶部操作栏 -->
+        <div class="table-header" style="padding:10px 20px;border-bottom:1px solid #f0f2f5;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;background:#fff;">
+            <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+                <span style="font-weight:600;font-size:16px;">📋 采购详情</span>
+                <span style="font-size:13px;color:#6c7a8a;" id="purchaseDetailTotalCount">共 0 条记录</span>
+                <span style="font-size:12px;color:#6c7a8a;background:#f0f2f5;padding:2px 12px;border-radius:12px;" id="selectedDetailCount">已选 0 行</span>
+                <!-- 搜索入口 -->
+                <div style="display:flex;align-items:center;gap:6px;margin-left:4px;">
+                    <i class="bi bi-search" style="color:#999;font-size:14px;"></i>
+                    <input type="text" id="detailSearchInput" class="form-control form-control-sm" placeholder="搜索订单号/产品/采购单..." style="width:200px;font-size:13px;border-radius:20px;padding:4px 14px;border:1px solid #d0d8e0;background:#f8fafc;" oninput="filterDetail()" />
+                    <button class="btn btn-sm btn-outline-custom" onclick="document.getElementById('detailSearchInput').value='';filterDetail();" style="padding:2px 8px;font-size:12px;border-radius:20px;" title="清空搜索">
+                        <i class="bi bi-x-circle"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="d-flex gap-2 flex-wrap align-items-center">
+                <!-- 多色底色下拉菜单 -->
+                <div class="btn-group">
+                    <button class="btn btn-sm dropdown-toggle" data-bs-toggle="dropdown" style="background:#ffc107;border-color:#ffc107;color:#0a2540;border-radius:8px 0 0 8px;padding:4px 14px;font-weight:500;border:none;font-size:13px;">
+                        <i class="bi bi-paint-bucket"></i> 底色
+                    </button>
+                    <ul class="dropdown-menu" style="padding:8px;min-width:auto;border-radius:12px;box-shadow:0 4px 16px rgba(0,0,0,0.12);">
+                        <li style="display:flex;gap:6px;padding:4px;flex-wrap:wrap;">
+                            <span style="display:inline-block;width:28px;height:28px;border-radius:50%;background:#fff3cd;cursor:pointer;border:2px solid #ddd;transition:all 0.15s;" onclick="applyDetailHighlight('#fff3cd')" title="黄色" onmouseover="this.style.borderColor='#0a2540';this.style.transform='scale(1.1)'" onmouseout="this.style.borderColor='#ddd';this.style.transform='scale(1)'"></span>
+                            <span style="display:inline-block;width:28px;height:28px;border-radius:50%;background:#d4edda;cursor:pointer;border:2px solid #ddd;transition:all 0.15s;" onclick="applyDetailHighlight('#d4edda')" title="绿色" onmouseover="this.style.borderColor='#0a2540';this.style.transform='scale(1.1)'" onmouseout="this.style.borderColor='#ddd';this.style.transform='scale(1)'"></span>
+                            <span style="display:inline-block;width:28px;height:28px;border-radius:50%;background:#f8d7da;cursor:pointer;border:2px solid #ddd;transition:all 0.15s;" onclick="applyDetailHighlight('#f8d7da')" title="红色" onmouseover="this.style.borderColor='#0a2540';this.style.transform='scale(1.1)'" onmouseout="this.style.borderColor='#ddd';this.style.transform='scale(1)'"></span>
+                            <span style="display:inline-block;width:28px;height:28px;border-radius:50%;background:#cce5ff;cursor:pointer;border:2px solid #ddd;transition:all 0.15s;" onclick="applyDetailHighlight('#cce5ff')" title="蓝色" onmouseover="this.style.borderColor='#0a2540';this.style.transform='scale(1.1)'" onmouseout="this.style.borderColor='#ddd';this.style.transform='scale(1)'"></span>
+                            <span style="display:inline-block;width:28px;height:28px;border-radius:50%;background:#e2d9f3;cursor:pointer;border:2px solid #ddd;transition:all 0.15s;" onclick="applyDetailHighlight('#e2d9f3')" title="紫色" onmouseover="this.style.borderColor='#0a2540';this.style.transform='scale(1.1)'" onmouseout="this.style.borderColor='#ddd';this.style.transform='scale(1)'"></span>
+                            <span style="display:inline-block;width:28px;height:28px;border-radius:50%;background:#fce4d6;cursor:pointer;border:2px solid #ddd;transition:all 0.15s;" onclick="applyDetailHighlight('#fce4d6')" title="橙色" onmouseover="this.style.borderColor='#0a2540';this.style.transform='scale(1.1)'" onmouseout="this.style.borderColor='#ddd';this.style.transform='scale(1)'"></span>
+                            <span style="display:inline-block;width:28px;height:28px;border-radius:50%;background:#d5e8d0;cursor:pointer;border:2px solid #ddd;transition:all 0.15s;" onclick="applyDetailHighlight('#d5e8d0')" title="薄荷" onmouseover="this.style.borderColor='#0a2540';this.style.transform='scale(1.1)'" onmouseout="this.style.borderColor='#ddd';this.style.transform='scale(1)'"></span>
+                        </li>
+                        <li><hr class="dropdown-divider" style="margin:4px 0;"></li>
+                        <li><a class="dropdown-item" href="#" onclick="clearDetailHighlight()" style="font-size:13px;border-radius:6px;"><i class="bi bi-eraser"></i> 清除底色</a></li>
+                    </ul>
+                </div>
+                <!-- 列设置 -->
+                <button class="btn btn-sm" onclick="openDetailColumnSettings()" style="background:#6c757d;border-color:#6c757d;color:#fff;border-radius:8px;padding:4px 14px;font-weight:500;border:none;font-size:13px;">
+                    <i class="bi bi-layout-three-columns"></i> 列设置
+                </button>
+                <!-- 导出选中 -->
+                <button class="btn btn-sm" onclick="exportSelectedDetail()" style="background:#0d6efd;border-color:#0d6efd;color:#fff;border-radius:8px;padding:4px 14px;font-weight:500;border:none;font-size:13px;">
+                    <i class="bi bi-file-earmark-excel"></i> 导出选中
+                </button>
+                <!-- 全选/取消全选 -->
+                <button class="btn btn-sm btn-outline-custom" onclick="toggleAllDetailRows()" style="border-radius:8px;padding:4px 14px;font-size:13px;">
+                    <i class="bi bi-check-all"></i> 全选
+                </button>
+            </div>
+        </div>
+
+        <!-- ★★★ 统计卡片（可点击筛选）+ 展开/收起按钮 ★★★ -->
+        <div style="padding:8px 20px;display:flex;flex-wrap:wrap;gap:8px;background:#f8fafc;border-bottom:1px solid #e9edf2;align-items:center;">
+            <!-- 一键收起 / 全部展开 -->
+            <button class="btn btn-sm btn-outline-custom" onclick="collapseAllDetails()" style="border-radius:16px;padding:2px 14px;font-size:12px;border-color:#6c757d;color:#6c757d;" title="收起所有子项">
+                <i class="bi bi-chevron-up"></i> 全部收起
+            </button>
+            <button class="btn btn-sm btn-outline-custom" onclick="expandAllDetails()" style="border-radius:16px;padding:2px 14px;font-size:12px;border-color:#6c757d;color:#6c757d;" title="展开所有子项">
+                <i class="bi bi-chevron-down"></i> 全部展开
+            </button>
+            <span style="color:#ddd;margin:0 4px;">|</span>
+            <span style="font-size:13px;font-weight:600;color:#3d4e62;margin-right:4px;">📊 筛选：</span>
+            <span class="detail-stat-item" data-type="" onclick="setDetailFilter('')" style="cursor:pointer;background:#fff;padding:4px 14px;border-radius:20px;border:2px solid #0066cc;font-size:13px;font-weight:600;color:#0066cc;transition:all 0.15s;">
+                全部 <span id="statTotal" style="font-weight:700;">0</span>
+            </span>
+            <span class="detail-stat-item" data-type="board" onclick="setDetailFilter('board')" style="cursor:pointer;background:#fff;padding:4px 14px;border-radius:20px;border:2px solid #e9edf2;font-size:13px;color:#6c7a8a;transition:all 0.15s;">
+                📦 板材 <span id="statBoard" style="font-weight:700;">0</span>
+            </span>
+            <span class="detail-stat-item" data-type="magnet" onclick="setDetailFilter('magnet')" style="cursor:pointer;background:#fff;padding:4px 14px;border-radius:20px;border:2px solid #e9edf2;font-size:13px;color:#6c7a8a;transition:all 0.15s;">
+                🧲 磁铁 <span id="statMagnet" style="font-weight:700;">0</span>
+            </span>
+            <span class="detail-stat-item" data-type="shell" onclick="setDetailFilter('shell')" style="cursor:pointer;background:#fff;padding:4px 14px;border-radius:20px;border:2px solid #e9edf2;font-size:13px;color:#6c7a8a;transition:all 0.15s;">
+                📦 壳子 <span id="statShell" style="font-weight:700;">0</span>
+            </span>
+            <span class="detail-stat-item" data-type="material" onclick="setDetailFilter('material')" style="cursor:pointer;background:#fff;padding:4px 14px;border-radius:20px;border:2px solid #e9edf2;font-size:13px;color:#6c7a8a;transition:all 0.15s;">
+                📦 材料 <span id="statMaterial" style="font-weight:700;">0</span>
+            </span>
+            <!-- 月份筛选 -->
+            <input type="month" class="form-control form-control-sm" id="filterDetailMonth" style="width:150px;font-size:13px;border-radius:20px;margin-left:8px;" onchange="renderDetailTable()" />
+        </div>
+
+        <!-- ★★★ 表格区域：固定高度 + 滚动，表头固定 ★★★ -->
+        <div style="padding:8px 12px;">
+            <div style="max-height: calc(100vh - 380px); overflow-y: auto; overflow-x: auto; position: relative; border-radius: 8px; border: 1px solid #e9edf2;">
+                <div id="purchaseDetailList"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 列设置模态框 -->
+    <div class="modal fade" id="detailColumnSettingsModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="bi bi-layout-three-columns"></i> 采购详情 - 列设置</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body column-settings-body" id="detailColumnSettingsContent">
+                    <!-- 由JS动态渲染 -->
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+                    <button class="btn btn-primary-custom" onclick="resetDetailColumns()">恢复默认</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+#page-purchaseDetail {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    max-width: 100%;
+    min-height: 0;
+    height: calc(100vh - 150px);
+    min-height: 680px;
+}
+#page-purchaseDetail .table-wrap {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    height: 100%;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid #e9edf2;
+    background: #fff;
+}
+#page-purchaseDetail .table-wrap .table-header {
+    flex-shrink: 0;
+}
+#page-purchaseDetail .table-wrap #purchaseDetailList {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+}
+#page-purchaseDetail .table-wrap #purchaseDetailList .table-responsive {
+    flex: 1 1 auto;
+    min-height: 0;
+    height: 100%;
+    overflow: auto;
+}
+#page-purchaseDetail .table-header {
+    background: #fff;
+}
+
+/* ★★★ 表格样式（表头固定） ★★★ */
+#purchaseDetailList {
+    width: 100%;
+}
+
+#purchaseDetailList .purchase-detail-table {
+    font-size: 13px;
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+    min-width: 1200px;
+}
+
+/* ★★★ 表头固定 ★★★ */
+#purchaseDetailList .purchase-detail-table thead th {
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 20 !important;
+    background: #f8fafc !important;
+    font-weight: 600;
+    color: #3d4e62;
+    padding: 8px 8px;
+    border-bottom: 2px solid #e9edf2;
+    text-align: center;
+    white-space: nowrap;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.04);
+}
+
+/* ★★★ 复选框列固定 ★★★ */
+#purchaseDetailList .purchase-detail-table thead th:first-child,
+#purchaseDetailList .purchase-detail-table tbody td:first-child {
+    position: sticky !important;
+    left: 0 !important;
+    z-index: 25 !important;
+    background: #f8fafc !important;
+}
+#purchaseDetailList .purchase-detail-table tbody td:first-child {
+    background: #fff !important;
+    z-index: 5 !important;
+}
+#purchaseDetailList .purchase-detail-table tbody tr.sub-row td:first-child {
+    background: #f8fafc !important;
+}
+#purchaseDetailList .purchase-detail-table tbody tr:hover td:first-child {
+    background: #f8faff !important;
+}
+
+#purchaseDetailList .purchase-detail-table td {
+    padding: 4px 8px;
+    border-bottom: 1px solid #f0f2f5;
+    vertical-align: middle;
+    text-align: center;
+}
+#purchaseDetailList .purchase-detail-table td.left {
+    text-align: left;
+}
+#purchaseDetailList .purchase-detail-table tr:hover td {
+    background-color: #f8faff;
+}
+#purchaseDetailList .purchase-detail-table .sub-row td {
+    background-color: #f8fafc !important;
+    font-size: 12px;
+    color: #555;
+}
+#purchaseDetailList .purchase-detail-table .sub-row td:first-child {
+    padding-left: 32px;
+}
+#purchaseDetailList .purchase-detail-table .sub-row:hover td {
+    background-color: #f0f4f8 !important;
+}
+
+#purchaseDetailList .detail-checkbox {
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+    accent-color: #0066cc;
+    transform: scale(1.1);
+}
+#purchaseDetailList .detail-checkbox:hover {
+    transform: scale(1.2);
+}
+
+#page-purchaseDetail .stat-item-active {
+    border-color: #0066cc !important;
+    background: #e6f0ff !important;
+    color: #0066cc !important;
+}
+
+/* ★★★ 列宽拖拽手柄 ★★★ */
+.col-resize-handle {
+    position: absolute;
+    right: -4px;
+    top: 0;
+    bottom: 0;
+    width: 8px;
+    cursor: col-resize;
+    z-index: 30;
+    user-select: none;
+    background: transparent;
+    transition: background 0.15s;
+}
+.col-resize-handle:hover,
+.col-resize-handle.active {
+    background: rgba(0, 102, 204, 0.25);
+}
+.col-resize-handle.dragging {
+    background: rgba(0, 102, 204, 0.4);
+}
+.col-resize-ghost {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: #0066cc;
+    z-index: 9999;
+    pointer-events: none;
+    display: none;
+}
+.col-resize-ghost.visible {
+    display: block;
+}
+body.resizing {
+    user-select: none !important;
+    cursor: col-resize !important;
+}
+
+/* ★★★ 备注输入框 ★★★ */
+.detail-remark-input {
+    border: none;
+    background: transparent;
+    width: 100%;
+    font-weight: 700;
+    font-size: 13px;
+    color: #0a2540;
+    outline: none;
+    padding: 2px 4px;
+    border-radius: 4px;
+    text-align: center;
+    min-width: 60px;
+}
+.detail-remark-input:focus {
+    background: #fff9e6;
+    border: 1px solid #f5a623;
+}
+.detail-remark-input::placeholder {
+    font-weight: 400;
+    color: #ccc;
+}
+
+/* ★★★ 展开/收起按钮 ★★★ */
+.detail-expand-btn {
+    cursor: pointer;
+    transition: transform 0.2s;
+    display: inline-block;
+    width: 20px;
+    text-align: center;
+    font-size: 14px;
+    color: #0066cc;
+}
+.detail-expand-btn.expanded {
+    transform: rotate(90deg);
+}
+.detail-expand-btn:hover {
+    color: #0a2540;
+}
+
+/* ★★★ 统计卡片悬停 ★★★ */
+.detail-stat-item:hover {
+    border-color: #0066cc !important;
+    background: #f0f7ff !important;
+}
+
+/* ★★★ 下拉菜单 ★★★ */
+#page-purchaseDetail .dropdown-menu {
+    border-radius: 12px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+}
+#page-purchaseDetail .dropdown-menu .dropdown-item:hover {
+    background: #f0f2f5;
+}
+
+/* ★★★ 子项缩进 ★★★ */
+.sub-item-indent {
+    padding-left: 36px !important;
+}
+
+/* ★★★ 父行双击提示 ★★★ */
+.parent-row {
+    cursor: default;
+}
+
+/* ★★★ 滚动条样式 ★★★ */
+#purchaseDetailList .table-responsive::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+#purchaseDetailList .table-responsive::-webkit-scrollbar-track {
+    background: #f0f2f5;
+    border-radius: 10px;
+}
+#purchaseDetailList .table-responsive::-webkit-scrollbar-thumb {
+    background: #c0c8d4;
+    border-radius: 10px;
+}
+#purchaseDetailList .table-responsive::-webkit-scrollbar-thumb:hover {
+    background: #a0aab8;
+}
+</style>
