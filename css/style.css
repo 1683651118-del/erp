@@ -89,36 +89,46 @@ body > .d-flex {
 .sidebar .nav-link .menu-delete-btn:hover { opacity: 1; }
 .sidebar .nav-link .menu-delete-btn.visible { display: inline-block; }
 
-.main-wrap {
-    flex: 1 1 auto;
-    min-width: 0;
-    width: 100%;
-    max-width: 100%;
-    padding: 24px 28px 40px;
-    display: flex;
-    flex-direction: column; /* 锁定垂直排列 */
-    height: 100vh; /* 强制占满全屏高度 */
-    background: var(--bg-light);
-    overflow: hidden; /* 防止外层滚动，锁定位置 */
+/* ===== 强制固定布局，彻底解决跳动 ===== */
+body {
+    overflow: hidden; /* 禁止全屏滚动 */
 }
 
-/* 顶部栏位置死守 */
+.sidebar {
+    position: fixed !important;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    z-index: 1000;
+}
+
+.main-wrap {
+    margin-left: 260px; /* 给侧边栏留出固定空间 */
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    padding: 0 !important; /* 移除外层内边距 */
+}
+
 .topbar {
-    flex-shrink: 0; /* 强制不许缩减 */
+    position: sticky;
+    top: 0;
+    height: 64px;
+    background: #fff;
+    padding: 0 28px;
+    z-index: 900;
+    border-bottom: 1px solid #f0f2f5;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    height: 60px; /* 给一个死高度 */
-    margin-bottom: 20px;
+    flex-shrink: 0;
 }
 
-/* 内容容器物理占位 */
 #pageContainer {
-    flex: 1; /* 自动撑开剩余空间 */
-    width: 100%;
-    overflow-y: auto; /* 只有这里允许滚动 */
-    position: relative;
-    background: transparent;
+    flex: 1;
+    overflow-y: auto;
+    padding: 24px 28px; /* 将内边距移到这里 */
+    background: var(--bg-light);
 }
 
 #pageContainer {
